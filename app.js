@@ -24,7 +24,7 @@ const normPhone = (p) => {
   p = p.replace(/[\s-]/g, "");
   return /^\d{7}$/.test(p) ? "+673" + p : p;
 };
-//persisted store, catalog, audit log
+// STATE: persisted store, catalog, audit log
 let S = (() => {
   try {
     const s = JSON.parse(localStorage.getItem("vantage1"));
@@ -66,6 +66,7 @@ S.audit = S.audit || [];
 S.users.forEach((u) => {
   if (!u.cards) u.cards = [u.card || mkCard(CAT[1])];
   delete u.card;
+  if (u.prefs.ev.remind === undefined) u.prefs.ev.remind = 1;
 });
 let ui = { tab: "home" };
 const save = () => {
@@ -96,7 +97,7 @@ function mk(un, phone, google) {
     unAt: 0,
     prefs: {
       ch: "whatsapp",
-      ev: { shared: 1, contrib: 1, done: 1, cancel: 1 },
+      ev: { shared: 1, contrib: 1, done: 1, cancel: 1, remind: 1 },
     },
     cards: [mkCard(CAT[1])],
   };
@@ -114,6 +115,7 @@ const MSG = {
   contrib: (a, e) => `${a} contributed to "${e}".`,
   done: (a, e) => `"${e}" is fully paid.`,
   cancel: (a, e) => `"${e}" was cancelled.`,
+  remind: (a, e) => `${a} reminded you to contribute to "${e}".`,
 };
 function notify(to, type, eid, actor) {
   to.forEach((t) => {
@@ -135,6 +137,22 @@ function everyone(e, skip) {
     e.by,
     ...e.ps.filter((p) => p.st === "agreed").map((p) => p.u),
   ].filter((x) => x !== skip);
+}
+function owing(e) {
+  return e.ps
+    .filter((p) => p.st === "agreed")
+    .filter((p) => {
+      const paid = sum(
+        S.cons.filter(
+          (c) =>
+            c.e === e.id &&
+            c.u === p.u &&
+            ["confirmed", "pending"].includes(c.st),
+        ),
+      );
+      return paid < (p.agreed || 1);
+    })
+    .map((p) => p.u);
 }
 function settle(e) {
   if (e.st === "active" && left(e) === 0) {
@@ -401,6 +419,22 @@ A.cancel = () => {
   notify(everyone(e, e.by), "cancel", e.id, e.by);
   ui.msg = "Expense cancelled and kept in History.";
 };
+A.remind = () => {
+  const e = X(ui.exp),
+    o = owing(e);
+  if (e.by !== S.me) return msg("Only the creator can send reminders.");
+  if (e.st !== "active") return msg("Reminders are only for active expenses.");
+  if (!o.length) return msg("Nobody has an outstanding contribution.");
+  if (e.remAt && Date.now() - e.remAt < 864e5)
+    return msg("A reminder was already sent in the last 24 hours.");
+  const before = S.notifs.length;
+  notify(o, "remind", e.id, S.me);
+  const n = S.notifs.length - before;
+  if (!n) return msg("Everyone still owing has reminders turned off.");
+  e.remAt = Date.now();
+  audit("reminder sent", e.id, n + " queued");
+  ui.msg = `Reminder queued for ${n} ${n === 1 ? "person" : "people"}. Nothing is sent in this prototype.`;
+};
 A.fs = () => {
   const q = val("fq").toLowerCase().replace(/\s/g, ""),
     u = S.users.find(
@@ -563,7 +597,7 @@ A.reset = () => {
   localStorage.removeItem("vantage1");
   location.reload();
 };
-//click & change delegation
+// EVENT WIRING: click & change delegation
 document.addEventListener("click", (e) => {
   const el = e.target.closest("[data-a]");
   if (
@@ -587,7 +621,7 @@ document.addEventListener("change", (e) => {
     render();
   }
 });
-// render functions for each screen
+// VIEWS: render functions for each screen
 const st = (s) =>
   ({
     pending: "Pending",
@@ -686,6 +720,11 @@ function detail(id) {
             `<div class="c"><div class="row"><span>${nm(r.u)}</span><span class="tag">${r.st}</span></div><div class="m">${esc(r.reason)}</div>${isC && r.st === "requested" ? `<div class="seg"><button class="b" data-a="rok" data-v="${r.id}">Approve</button><button class="b s" data-a="rno" data-v="${r.id}">Reject</button></div>` : ""}</div>`,
         )
         .join("");
+  if (isC && e.st === "active") {
+    const o = owing(e);
+    if (o.length)
+      h += `<h2>Reminders</h2><div class="c"><div>Still to contribute: ${o.map((u) => nm(u)).join(", ")}</div>${e.remAt && Date.now() - e.remAt < 864e5 ? `<div class="m">Last reminder ${dt(e.remAt)}. You can send another after 24 hours.</div>` : '<button class="b s" data-a="remind">Send reminder</button>'}</div>`;
+  }
   if (isC && e.st !== "cancelled")
     h += `<h2>Cancel expense</h2><input id="cr" placeholder="Reason"><button class="b d" data-a="cancel">Cancel expense</button>`;
   return h;
@@ -832,6 +871,7 @@ function ac() {
    ["contrib", "Someone contributes"],
    ["done", "Expense completed"],
    ["cancel", "Expense cancelled"],
+   ["remind", "Payment reminder"],
  ]
    .map(
      ([k, l]) =>
