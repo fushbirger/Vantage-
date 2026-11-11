@@ -1,0 +1,903 @@
+// HELPERS: DOM, formatting, validation
+const $ = (s) => document.querySelector(s),
+  val = (i) => ($("#" + i)?.value || "").trim(),
+  uid = () => Math.random().toString(36).slice(2, 10);
+const esc = (s) =>
+  String(s ?? "").replace(
+    /[&<>"']/g,
+    (c) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
+        c
+      ],
+  );
+const money = (c) => "BND " + (c / 100).toFixed(2),
+  toC = (v) => {
+    const n = Math.round(parseFloat(v) * 100);
+    return isFinite(n) && n > 0 ? n : 0;
+  };
+const dt = (t) =>
+  new Date(t).toLocaleString("en-GB", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+const normPhone = (p) => {
+  p = p.replace(/[\s-]/g, "");
+  return /^\d{7}$/.test(p) ? "+673" + p : p;
+};
+//persisted store, catalog, audit log
+let S = (() => {
+  try {
+    const s = JSON.parse(localStorage.getItem("vantage1"));
+    if (s && s.users) return s;
+  } catch (e) {}
+  return {
+    users: [],
+    me: null,
+    rel: [],
+    exps: [],
+    cons: [],
+    refs: [],
+    notifs: [],
+    txns: [],
+    props: [],
+    evs: [],
+    last: null,
+    cfg: { plan: "free" },
+  };
+})();
+const CAT = [
+  "BIBD Credit World Mastercard",
+  "BIBD Credit Gold Mastercard",
+  "BIBD Credit Classic Mastercard",
+  "BIBD Credit Visa Platinum",
+  "BIBD Credit Visa Gold",
+  "BIBD Platinum Debit Mastercard",
+  "BIBD Flex Debit Mastercard (age 15–17)",
+  "BIBD Virtual Prepaid Mastercard",
+  "Baiduri Mastercard Standard",
+  "Baiduri Visa Classic",
+];
+const mkCard = (n) => ({
+  token: "tok_sim_" + uid(),
+  label: n + " •••• " + String(Math.floor(Math.random() * 9000) + 1000),
+});
+const audit = (a, e, d) => S.audit.push({ t: Date.now(), u: S.me, a, e, d });
+S.audit = S.audit || [];
+S.users.forEach((u) => {
+  if (!u.cards) u.cards = [u.card || mkCard(CAT[1])];
+  delete u.card;
+});
+let ui = { tab: "home" };
+const save = () => {
+  try {
+    localStorage.setItem("vantage1", JSON.stringify(S));
+  } catch (e) {}
+};
+// SELECTORS & DOMAIN LOGIC: users, totals, friends, notifications
+const U = (i) => S.users.find((u) => u.id === i),
+  me = () => U(S.me),
+  X = (i) => S.exps.find((e) => e.id === i),
+  nm = (i) => (U(i) ? "@" + U(i).username : esc(i));
+const sum = (a) => a.reduce((s, x) => s + x.amt, 0),
+  conf = (e) => sum(S.cons.filter((c) => c.e === e.id && c.st === "confirmed")),
+  pend = (e) => sum(S.cons.filter((c) => c.e === e.id && c.st === "pending"));
+const left = (e) => Math.max(0, e.total - conf(e));
+const friends = (id) =>
+  S.rel
+    .filter((r) => r.st === "ok" && (r.a === id || r.b === id))
+    .map((r) => (r.a === id ? r.b : r.a));
+function mk(un, phone, google) {
+  const u = {
+    id: uid(),
+    username: un,
+    phone,
+    google,
+    at: Date.now(),
+    unAt: 0,
+    prefs: {
+      ch: "whatsapp",
+      ev: { shared: 1, contrib: 1, done: 1, cancel: 1 },
+    },
+    cards: [mkCard(CAT[1])],
+  };
+  S.users.push(u);
+  return u;
+}
+function checkName(u, self) {
+  if (!/^[a-z0-9_]{3,20}$/.test(u))
+    return "Use 3–20 letters, numbers or underscores.";
+  if (S.users.some((x) => x.username === u && x.id !== self))
+    return "That username is taken.";
+}
+const MSG = {
+  shared: (a, e) => `${a} shared the expense "${e}" with you.`,
+  contrib: (a, e) => `${a} contributed to "${e}".`,
+  done: (a, e) => `"${e}" is fully paid.`,
+  cancel: (a, e) => `"${e}" was cancelled.`,
+};
+function notify(to, type, eid, actor) {
+  to.forEach((t) => {
+    const u = U(t);
+    if (!u || u.prefs.ch === "off" || !u.prefs.ev[type]) return;
+    S.notifs.push({
+      id: uid(),
+      to: t,
+      type,
+      e: eid,
+      actor,
+      ch: u.prefs.ch,
+      t: Date.now(),
+    });
+  });
+}
+function everyone(e, skip) {
+  return [
+    e.by,
+    ...e.ps.filter((p) => p.st === "agreed").map((p) => p.u),
+  ].filter((x) => x !== skip);
+}
+function settle(e) {
+  if (e.st === "active" && left(e) === 0) {
+    e.st = "done";
+    e.doneAt = Date.now();
+    notify(everyone(e), "done", e.id);
+  } else if (e.st === "done" && left(e) > 0) {
+    e.st = "active";
+  }
+}
+// PROVIDER EVENTS: payment & refund webhooks (simulated)
+function ev(id, type, ref) {
+  if (S.evs.includes(id)) return false;
+  S.evs.push(id);
+  S.last = { id, type, ref };
+  audit("provider event " + type, "", ref);
+  const c = S.cons.find((x) => x.ref === ref),
+    r = S.refs.find((x) => x.id === ref),
+    now = Date.now();
+  if (type === "pay.ok" && c?.st === "pending") {
+    c.st = "confirmed";
+    c.ct = now;
+    const e = X(c.e);
+    S.txns.push({
+      id: uid(),
+      k: "repay",
+      from: c.u,
+      to: e.by,
+      amt: c.amt,
+      at: now,
+      ref: c.ref,
+    });
+    notify(everyone(e, c.u), "contrib", e.id, c.u);
+    if (e.st === "cancelled") {
+      S.refs.push({
+        id: uid(),
+        e: e.id,
+        c: c.id,
+        u: c.u,
+        reason: "Payment arrived after cancellation",
+        st: "approved",
+      });
+      c.st = "refund_pending";
+    } else settle(e);
+  } else if (type === "pay.fail" && c?.st === "pending") c.st = "failed";
+  else if (type === "pay.rev" && c?.st === "confirmed") {
+    c.st = "reversed";
+    const e = X(c.e);
+    S.txns.push({
+      id: uid(),
+      k: "reversal",
+      from: e.by,
+      to: c.u,
+      amt: c.amt,
+      at: now,
+      ref: c.ref,
+    });
+    settle(e);
+  } else if (type === "ref.ok" && r?.st === "approved") {
+    r.st = "completed";
+    r.ct = now;
+    const k = S.cons.find((x) => x.id === r.c);
+    k.st = "refunded";
+    const e = X(r.e);
+    S.txns.push({
+      id: uid(),
+      k: "refund",
+      from: e.by,
+      to: r.u,
+      amt: k.amt,
+      at: now,
+      ref: r.id,
+    });
+    settle(e);
+  } else if (type === "ref.fail" && r?.st === "approved") {
+    r.st = "failed";
+    S.cons.find((x) => x.id === r.c).st = "confirmed";
+  }
+  return true;
+}
+// ACTIONS: handlers triggered via data-a attributes
+const msg = (t) => {
+  ui.msg = t;
+  const el = $("#msg");
+  el ? ((el.textContent = t), (ui.skip = 1)) : render();
+};
+const A = {};
+function finish() {
+  const a = ui.auth,
+    f = S.users.find((u) =>
+      a.m === "phone" ? u.phone === a.v : u.google === a.v,
+    );
+  if (f) {
+    S.me = f.id;
+    ui = { tab: "home" };
+  } else a.s = 3;
+}
+A.am = (el) => {
+  ui.auth = { m: el.dataset.v, s: 1 };
+};
+A.ago = () => {
+  const a = ui.auth || (ui.auth = { m: "google", s: 1 });
+  if (a.s === 1) {
+    let v = val("av");
+    if (!v) return msg("Enter a value to continue.");
+    a.v = a.m === "phone" ? normPhone(v) : v.toLowerCase();
+    a.m === "phone" ? (a.s = 2) : finish();
+  } else if (a.s === 2) {
+    if (val("otp") !== "123456") return msg("Code is incorrect.");
+    finish();
+  } else {
+    const u = val("un").toLowerCase(),
+      e = checkName(u);
+    if (e) return msg(e);
+    S.me = mk(
+      u,
+      a.m === "phone" ? a.v : null,
+      a.m === "google" ? a.v : null,
+    ).id;
+    ui = { tab: "home" };
+  }
+};
+A.tab = (el) => {
+  ui = { tab: el.dataset.v };
+};
+A.open = (el) => {
+  ui.exp = el.dataset.v;
+  ui.txd = null;
+};
+A.back = () => {
+  ui.exp = ui.newx = ui.txd = null;
+};
+A.newx = () => {
+  ui.newx = {};
+};
+A.review = (el) => {
+  ui.newx = { pr: S.props.find((p) => p.id === el.dataset.v) };
+};
+A.decline = (el) => {
+  S.props.find((p) => p.id === el.dataset.v).st = "declined";
+  ui.msg = "Proposal declined. No expense was created.";
+};
+A.publish = () => {
+  const m = me(),
+    pr = ui.newx.pr,
+    n = val("xn"),
+    t = toC(val("xa")),
+    d = new Date(val("xd")).getTime();
+  const ps = friends(m.id)
+    .filter((f) => $("#p_" + f)?.checked)
+    .map((f) => ({ u: f, agreed: toC(val("pa_" + f)), st: "invited" }));
+  if (!n) return msg("Enter the place or merchant.");
+  if (!t) return msg("Enter a total amount above zero.");
+  if (val("xd") && !(d > Date.now()))
+    return msg("The deadline must be in the future.");
+  if (!ps.length) return msg("Select at least one friend.");
+  if (sum(ps.map((p) => ({ amt: p.agreed }))) > t)
+    return msg("Agreed amounts exceed the total.");
+  const e = {
+    id: uid(),
+    by: m.id,
+    name: n,
+    merchant: pr?.merchant || n,
+    total: t,
+    at: Date.now(),
+    dl: val("xd") ? d : null,
+    st: "active",
+    ref: pr?.ref || "",
+    ps,
+  };
+  S.exps.push(e);
+  audit("expense published", e.id, money(t));
+  if (pr) pr.st = "accepted";
+  notify(
+    ps.map((p) => p.u),
+    "shared",
+    e.id,
+    m.id,
+  );
+  ui.newx = null;
+  ui.exp = e.id;
+  ui.msg = "Published. Published expenses cannot be edited.";
+};
+A.join = (el) => {
+  const p = X(ui.exp).ps.find((p) => p.u === S.me);
+  p.st = el.dataset.v;
+};
+A.pay = () => {
+  const e = X(ui.exp),
+    c = toC(val("pay")),
+    cap = left(e) - pend(e);
+  if (e.st !== "active" || e.ps.find((p) => p.u === S.me)?.st !== "agreed")
+    return msg("Join and agree first.");
+  if (!c || c > cap) return msg(`Enter an amount up to ${money(cap)}.`);
+  const cd = me().cards.find((x) => x.token === val("card"));
+  if (!cd) return msg("Select a card.");
+  S.cons.push({
+    id: uid(),
+    e: e.id,
+    u: S.me,
+    amt: c,
+    ref: "pay_" + uid(),
+    card: cd.token,
+    st: "pending",
+    at: Date.now(),
+  });
+  audit("payment started", e.id, money(c));
+  ui.msg = "Payment started. It counts only after the provider confirms it.";
+};
+A.rreq = (el) => {
+  const r = val("rr_" + el.dataset.v);
+  if (!r) return msg("A reason is required.");
+  const c = S.cons.find((x) => x.id === el.dataset.v);
+  if (c.u !== S.me || c.st !== "confirmed") return msg("Not allowed.");
+  S.refs.push({
+    id: uid(),
+    e: c.e,
+    c: c.id,
+    u: c.u,
+    reason: r,
+    st: "requested",
+    at: Date.now(),
+  });
+  audit("refund requested", c.e, r);
+};
+A.rok = (el) => {
+  const r = S.refs.find((x) => x.id === el.dataset.v);
+  if (X(r.e).by !== S.me) return msg("Only the creator can approve.");
+  audit("refund approved", r.e, r.id);
+  r.st = "approved";
+  S.cons.find((x) => x.id === r.c).st = "refund_pending";
+  ui.msg = "Approved. The refund counts after the provider confirms it.";
+};
+A.rno = (el) => {
+  const r = S.refs.find((x) => x.id === el.dataset.v);
+  if (X(r.e).by !== S.me) return msg("Only the creator can reject.");
+  audit("refund rejected", r.e, r.id);
+  r.st = "rejected";
+};
+A.cancel = () => {
+  const r = val("cr"),
+    e = X(ui.exp);
+  if (!r) return msg("Enter a cancellation reason.");
+  if (e.by !== S.me) return msg("Only the creator can cancel.");
+  e.st = "cancelled";
+  e.cr = r;
+  audit("expense cancelled", e.id, r);
+  S.cons.forEach((c) => {
+    if (c.e !== e.id) return;
+    if (c.st === "pending") c.st = "voided";
+    if (c.st === "confirmed") {
+      c.st = "refund_pending";
+      S.refs.push({
+        id: uid(),
+        e: e.id,
+        c: c.id,
+        u: c.u,
+        reason: "Expense cancelled: " + r,
+        st: "approved",
+        at: Date.now(),
+      });
+    }
+  });
+  notify(everyone(e, e.by), "cancel", e.id, e.by);
+  ui.msg = "Expense cancelled and kept in History.";
+};
+A.fs = () => {
+  const q = val("fq").toLowerCase().replace(/\s/g, ""),
+    u = S.users.find(
+      (x) =>
+        x.id !== S.me &&
+        (x.username === q || (x.phone && x.phone === normPhone(q))),
+    );
+  ui.fr = u ? u.id : "none";
+};
+A.freq = (el) => {
+  const t = el.dataset.v;
+  if (
+    S.rel.some(
+      (r) => (r.a === S.me && r.b === t) || (r.a === t && r.b === S.me),
+    )
+  )
+    return msg("Already requested or friends.");
+  S.rel.push({ id: uid(), a: S.me, b: t, st: "req", at: Date.now() });
+  ui.fr = null;
+};
+A.facc = (el) => {
+  const r = S.rel.find((x) => x.id === el.dataset.v);
+  r.st = "ok";
+  r.ok = Date.now();
+};
+A.fdel = (el) => {
+  S.rel = S.rel.filter((x) => x.id !== el.dataset.v);
+};
+A.seg = (el) => {
+  ui.seg = el.dataset.v;
+};
+A.tx = (el) => {
+  ui.txd = el.dataset.v;
+};
+A.hs = () => {
+  ui.hq = val("hq").toLowerCase();
+};
+A.uname = () => {
+  const m = me(),
+    u = val("nu").toLowerCase(),
+    e = checkName(u, m.id);
+  if (e) return msg(e);
+  if (Date.now() - m.unAt < 2592e6)
+    return msg("Usernames can change once every 30 days.");
+  m.username = u;
+  m.unAt = Date.now();
+  ui.msg = "Username updated.";
+};
+A.lph = () => {
+  const p = normPhone(val("lp"));
+  if (val("lo") !== "123456") return msg("Verification code is incorrect.");
+  if (S.users.some((u) => u.phone === p))
+    return msg("That phone number belongs to an account.");
+  me().phone = p;
+  audit("phone linked");
+  ui.msg = "Phone linked.";
+};
+A.lgo = () => {
+  const g = val("lg").toLowerCase();
+  if (!g) return msg("Enter the Google account.");
+  if (S.users.some((u) => u.google === g))
+    return msg("That Google account belongs to an account.");
+  me().google = g;
+  audit("google linked");
+  ui.msg = "Google linked.";
+};
+A.pref = (el) => {
+  const p = me().prefs;
+  el.dataset.v === "ch"
+    ? (p.ch = el.value)
+    : (p.ev[el.dataset.v] = el.checked ? 1 : 0);
+};
+A.plan = (el) => {
+  S.cfg.plan = el.value;
+};
+A.out = () => {
+  S.me = null;
+  ui = { tab: "home" };
+};
+A.pe = (el) => {
+  ev("evt_" + uid(), el.dataset.t, el.dataset.v);
+};
+A.replay = () => {
+  if (!S.last) return;
+  ui.msg = ev(S.last.id, S.last.type, S.last.ref)
+    ? "Applied."
+    : "Duplicate event ignored. Nothing counted twice.";
+};
+A.bank = () => {
+  const m = val("bm"),
+    a = toC(val("ba")),
+    r = val("br");
+  if (!m || !a || !r) return msg("Fill merchant, amount and reference.");
+  if (S.props.some((p) => p.ref === r))
+    return msg("Duplicate transaction event ignored.");
+  S.props.push({
+    id: uid(),
+    u: S.me,
+    merchant: m,
+    amt: a,
+    ref: r,
+    st: "pending",
+    at: Date.now(),
+  });
+  S.txns.push({
+    id: uid(),
+    k: "buy",
+    from: S.me,
+    to: m,
+    amt: a,
+    at: Date.now(),
+    ref: r,
+  });
+  ui.msg = "Simulated proposal created.";
+};
+A.addc = () => {
+  me().cards.push(mkCard(val("cn")));
+  ui.msg =
+    "Simulated card added. Only a token and last four digits are stored.";
+};
+const TN = [
+  "aiman",
+  "nurul",
+  "hakim",
+  "sofia",
+  "danial",
+  "farah",
+  "irfan",
+  "balqis",
+];
+A.addf = (el) => {
+  const one = el.dataset.v === "one",
+    pick = one ? [val("fn")] : TN;
+  let n = one ? 1 : 3;
+  for (const nme of pick) {
+    if (!n) break;
+    let u = S.users.find((x) => x.username === nme);
+    if (u && (u.id === S.me || friends(S.me).includes(u.id))) continue;
+    if (!u) u = mk(nme, null, null);
+    S.rel = S.rel.filter(
+      (r) =>
+        !((r.a === S.me && r.b === u.id) || (r.a === u.id && r.b === S.me)),
+    );
+    S.rel.push({ id: uid(), a: S.me, b: u.id, st: "ok", ok: Date.now() });
+    n--;
+  }
+  ui.msg = "Test friends added (development only).";
+};
+A.addu = () => {
+  const u = val("su").toLowerCase(),
+    e = checkName(u);
+  if (e) return msg(e);
+  mk(u, null, null);
+};
+A.sw = (el) => {
+  S.me = el.value;
+  ui = { tab: "home" };
+};
+A.reset = () => {
+  localStorage.removeItem("vantage1");
+  location.reload();
+};
+//click & change delegation
+document.addEventListener("click", (e) => {
+  const el = e.target.closest("[data-a]");
+  if (
+    !el ||
+    el.tagName === "SELECT" ||
+    (el.tagName === "INPUT" && el.type !== "button")
+  )
+    return;
+  ui.msg = "";
+  ui.skip = 0;
+  S.sessAt = Date.now();
+  A[el.dataset.a](el);
+  if (ui.skip) ui.skip = 0;
+  else render();
+});
+document.addEventListener("change", (e) => {
+  const el = e.target.closest("select[data-a],input[data-a]");
+  if (el) {
+    S.sessAt = Date.now();
+    A[el.dataset.a](el);
+    render();
+  }
+});
+// render functions for each screen
+const st = (s) =>
+  ({
+    pending: "Pending",
+    confirmed: "Confirmed",
+    failed: "Failed",
+    reversed: "Reversed",
+    refund_pending: "Refund pending",
+    refunded: "Refunded",
+    voided: "Voided",
+  })[s] || s;
+const bar = (e) => {
+  const ids = [...new Set(S.cons.filter((c) => c.e === e.id).map((c) => c.u))];
+  return `<div class="bar" role="img" aria-label="${money(conf(e))} of ${money(e.total)}">${ids
+    .map((u, i) => {
+      const a = sum(
+        S.cons.filter((c) => c.e === e.id && c.u === u && c.st === "confirmed"),
+      );
+      return a
+        ? `<i style="width:${(a / e.total) * 100}%;background:hsl(${i * 57 + 170},50%,45%)"></i>`
+        : "";
+    })
+    .join("")}</div>`;
+};
+const card = (e) =>
+  `<button class="c" data-a="open" data-v="${e.id}"><div class="row"><b>${esc(e.name)}</b><span>${money(e.total)}</span></div>${bar(e)}<div class="row m"><span>Contributed ${money(conf(e))}</span><span>Remaining ${money(left(e))}</span></div><div class="m">${e.dl ? "Deadline " + dt(e.dl) : "No deadline"}${e.dl && e.dl < Date.now() && e.st === "active" ? ' <b class="bad">· overdue</b>' : ""}</div></button>`;
+const mine = (e) =>
+  e.by === S.me || e.ps.some((p) => p.u === S.me && p.st !== "declined");
+function home() {
+  const m = me(),
+    ex = S.exps.filter((e) => e.st === "active" && mine(e)),
+    pr = S.props.filter((p) => p.u === m.id && p.st === "pending");
+  return (
+    `<h1>Active Expenses</h1><button class="b" data-a="newx">New expense</button>` +
+    pr
+      .map(
+        (p) =>
+          `<div class="c"><span class="tag">Proposed · not shared</span><div class="row"><b>${esc(p.merchant)}</b><span>${money(p.amt)}</span></div><div class="m">Detected from a simulated transaction. Nothing is shared until you accept and publish.</div><div class="seg"><button class="b" data-a="review" data-v="${p.id}">Review</button><button class="b s" data-a="decline" data-v="${p.id}">Decline</button></div></div>`,
+      )
+      .join("") +
+    (ex.map(card).join("") ||
+      '<p class="m">No active expenses. Create one, or wait for a proposal.</p>')
+  );
+}
+function form() {
+  const m = me(),
+    pr = ui.newx.pr,
+    fr = friends(m.id);
+  return `<button class="b s" data-a="back">Back</button><h1>New expense</h1>${pr ? '<p class="m">Prepared from a detected purchase. You review before anything is shared.</p>' : ""}
+<label>${pr ? "Place (taken from the purchase)" : "Place or merchant (becomes the expense name)"}</label><input id="xn" value="${esc(pr?.merchant || "")}" ${pr ? "readonly" : ""}><label>Total (BND)</label><input id="xa" inputmode="decimal" value="${pr ? (pr.amt / 100).toFixed(2) : ""}" ${pr ? "readonly" : ""}>
+<label>Contribution deadline (optional)</label><input id="xd" type="datetime-local"><h2>Friends involved</h2>
+${fr.map((f) => `<div class="c"><label><input type="checkbox" id="p_${f}"> ${nm(f)}</label><input id="pa_${f}" inputmode="decimal" placeholder="Agreed amount (optional)"></div>`).join("") || '<p class="m">Add friends first in Friends.</p>'}
+<p class="m">Amounts can differ. Participants agree to the deadline when they join. Published expenses can't be edited.</p><button class="b" data-a="publish">Publish expense</button>`;
+}
+function detail(id) {
+  const e = X(id),
+    m = me(),
+    mineP = e.ps.find((p) => p.u === m.id),
+    isC = e.by === m.id,
+    cons = S.cons.filter((c) => c.e === id);
+  let h = `<button class="b s" data-a="back">Back</button><h1>${esc(e.name)}</h1><span class="tag">${e.st === "active" ? "Active" : e.st === "done" ? "Done" : "Cancelled"}</span> <span class="m">Paid by ${nm(e.by)}</span>${bar(e)}
+<div class="row"><span>Total ${money(e.total)}</span><span>Contributed ${money(conf(e))}</span></div><div class="row"><b>Remaining ${money(left(e))}</b><span class="m">${e.dl ? "Deadline " + dt(e.dl) : "No deadline"}</span></div>${e.cr ? `<p class="bad">Cancelled: ${esc(e.cr)}</p>` : ""}<h2>People</h2>`;
+  h += e.ps
+    .map(
+      (p) =>
+        `<div class="c row"><span>${nm(p.u)} <span class="tag">${p.st === "agreed" ? "Agreed" : p.st === "declined" ? "Declined" : "Invited"}</span>${p.agreed ? `<div class="m">Agreed ${money(p.agreed)}</div>` : ""}</span><b>${money(sum(cons.filter((c) => c.u === p.u && c.st === "confirmed")))}</b></div>`,
+    )
+    .join("");
+  if (mineP?.st === "invited" && e.st === "active")
+    h += `<div class="c">Join this expense${e.dl ? " and agree to the deadline " + dt(e.dl) : ""}?<div class="seg"><button class="b" data-a="join" data-v="agreed">Agree</button><button class="b s" data-a="join" data-v="declined">Decline</button></div></div>`;
+  if (mineP?.st === "agreed" && e.st === "active") {
+    const cap = left(e) - pend(e);
+    h +=
+      cap > 0
+        ? `<h2>Contribute</h2><div class="c"><label>Amount (up to ${money(cap)})</label><input id="pay" inputmode="decimal" value="${mineP.agreed && mineP.agreed <= cap ? (mineP.agreed / 100).toFixed(2) : ""}"><label>Pay with</label><select id="card">${m.cards.map((x) => `<option value="${x.token}">${esc(x.label)}</option>`).join("")}</select><p class="m">Goes to ${nm(e.by)} through the payment provider (simulated).</p><button class="b" data-a="pay">Pay</button></div>`
+        : '<p class="m">Waiting on pending payments for the full amount.</p>';
+  }
+  const my = cons.filter((c) => isC || c.u === m.id);
+  if (my.length)
+    h +=
+      "<h2>Payments</h2>" +
+      my
+        .map((c) => {
+          const r = S.refs.find(
+            (x) => x.c === c.id && ["requested", "approved"].includes(x.st),
+          );
+          return `<div class="c"><div class="row"><span>${nm(c.u)} · ${money(c.amt)}</span><span class="tag">${st(c.st)}</span></div><div class="m">${dt(c.at)}</div>${c.st === "confirmed" && c.u === m.id && !r ? `<input id="rr_${c.id}" placeholder="Reason for refund"><button class="b s" data-a="rreq" data-v="${c.id}">Request refund</button>` : ""}</div>`;
+        })
+        .join("");
+  const rf = S.refs.filter((r) => r.e === id && (isC || r.u === m.id));
+  if (rf.length)
+    h +=
+      "<h2>Refunds</h2>" +
+      rf
+        .map(
+          (r) =>
+            `<div class="c"><div class="row"><span>${nm(r.u)}</span><span class="tag">${r.st}</span></div><div class="m">${esc(r.reason)}</div>${isC && r.st === "requested" ? `<div class="seg"><button class="b" data-a="rok" data-v="${r.id}">Approve</button><button class="b s" data-a="rno" data-v="${r.id}">Reject</button></div>` : ""}</div>`,
+        )
+        .join("");
+  if (isC && e.st !== "cancelled")
+    h += `<h2>Cancel expense</h2><input id="cr" placeholder="Reason"><button class="b d" data-a="cancel">Cancel expense</button>`;
+  return h;
+}
+const party = (x) => (U(x) ? "@" + U(x).username : esc(x));
+function tx() {
+  const m = S.me,
+    g = S.txns.filter((t) => t.k !== "buy" && (t.from === m || t.to === m)),
+    p = S.txns.filter((t) => t.k === "buy" && t.from === m),
+    l = (ui.seg || "p") === "p" ? p : g;
+  return (
+    `<h1>Transactions</h1><div class="seg"><button class="b ${ui.seg === "g" ? "s" : ""}" data-a="seg" data-v="p">Personal</button><button class="b ${ui.seg === "g" ? "" : "s"}" data-a="seg" data-v="g">Group</button></div>` +
+    (l
+      .slice()
+      .reverse()
+      .map(
+        (t) =>
+          `<button class="c" data-a="tx" data-v="${t.id}"><div class="row"><b>${party(t.k === "buy" ? t.to : t.from === m ? t.to : t.from)}</b><span>${money(t.amt)}</span></div><div class="m">${dt(t.at)}</div></button>`,
+      )
+      .join("") || '<p class="m">No transactions yet.</p>')
+  );
+}
+function txd() {
+  const t = S.txns.find((x) => x.id === ui.txd);
+  return `<button class="b s" data-a="back">Back</button><h1>Transaction</h1><div class="c"><div class="m">Amount paid</div><b>${money(t.amt)}</b></div><div class="c"><div class="m">Date and time</div><b>${dt(t.at)}</b></div><div class="c"><div class="m">Sender and receiver</div><b>${party(t.from)} to ${party(t.to)}</b></div>`;
+}
+function fr() {
+  const m = S.me,
+    inc = S.rel.filter((r) => r.st === "req" && r.b === m);
+  return (
+    `<h1>Friends</h1><label>Find by username or phone number</label><input id="fq"><button class="b" data-a="fs">Search</button>` +
+    (ui.fr === "none"
+      ? '<p class="m">No matching user.</p>'
+      : ui.fr
+        ? `<div class="c row"><b>${nm(ui.fr)}</b><button class="b" data-a="freq" data-v="${ui.fr}">Send request</button></div>`
+        : "") +
+    (inc.length
+      ? "<h2>Requests</h2>" +
+        inc
+          .map(
+            (r) =>
+              `<div class="c row"><b>${nm(r.a)}</b><span><button class="b" data-a="facc" data-v="${r.id}">Accept</button> <button class="b s" data-a="fdel" data-v="${r.id}">Decline</button></span></div>`,
+          )
+          .join("")
+      : "") +
+    "<h2>Your friends</h2>" +
+    (S.rel
+      .filter((r) => r.st === "ok" && (r.a === m || r.b === m))
+      .map(
+        (r) =>
+          `<div class="c row"><b>${nm(r.a === m ? r.b : r.a)}</b><button class="b s" data-a="fdel" data-v="${r.id}">Remove</button></div>`,
+      )
+      .join("") || '<p class="m">No friends yet.</p>')
+  );
+}
+function hi() {
+  const q = ui.hq || "",
+    l = S.exps.filter(
+      (e) =>
+        e.st !== "active" &&
+        mine(e) &&
+        (!q ||
+          [
+            e.name,
+            e.merchant,
+            e.ref,
+            ...S.cons.filter((c) => c.e === e.id).map((c) => c.ref),
+          ].some((s) => String(s).toLowerCase().includes(q))),
+    );
+  return (
+    `<h1>History</h1><input id="hq" placeholder="Search merchant or transaction details" value="${esc(q)}"><button class="b" data-a="hs">Search</button>` +
+    (l
+      .map(
+        (e) =>
+          `<div>${card(e).replace("<b>" + esc(e.name) + "</b>", "<b>" + esc(e.name) + '</b> <span class="tag">' + (e.st === "done" ? "Done" : "Cancelled") + "</span>")}</div>`,
+      )
+      .join("") || '<p class="m">Nothing found.</p>')
+  );
+}
+A.sub = (el) => {
+  ui.sub = el.dataset.v || null;
+};
+function sub() {
+  const m = me(),
+    k = ui.sub,
+    bk = '<button class="b s" data-a="sub">Back</button>';
+  if (k === "notif")
+    return (
+      bk +
+      "<h1>Notifications</h1>" +
+      (S.notifs
+        .filter((n) => n.to === m.id)
+        .slice()
+        .reverse()
+        .map(
+          (n) =>
+            `<div class="c"><div>${esc(MSG[n.type](nm(n.actor), X(n.e)?.name))}</div><div class="m">${dt(n.t)} · queued for ${n.ch}, not sent</div></div>`,
+        )
+        .join("") || '<p class="m">Nothing yet.</p>') +
+      '<p class="m">Choose channels and events in Account.</p>'
+    );
+  if (k === "sub")
+    return (
+      bk +
+      `<h1>Subscription</h1><div class="c"><b>${S.cfg.plan === "paid" ? "Paid" : "Free"}</b><div class="m">Proposed price: USD 1 per month. Billing is not active, so you are never charged.</div></div><div class="c"><b>Free</b><div class="m">Expense tracking, manual expenses, contribution coordination.</div></div><div class="c"><b>Paid (proposed)</b><div class="m">Automatic expense proposals where supported, plus convenience features. The split isn't final.</div></div>`
+    );
+  const mp = m.phone
+    ? m.phone.slice(0, 4) + "••••" + m.phone.slice(-2)
+    : "none";
+  return (
+    bk +
+    `<h1>Privacy and security</h1><div class="c"><div class="m">Held about you</div>Username @${esc(m.username)}<br>Phone ${esc(mp)} (shown only to you)<br>Google ${m.google ? "linked" : "none"}<br>Cards: ${m.cards.map((c) => esc(c.label)).join(", ")} (token and last four digits only)</div><p class="m">You are signed out after 30 minutes of inactivity.</p><h2>Your audit record</h2>` +
+    (S.audit
+      .filter((a) => a.u === m.id)
+      .slice(-15)
+      .reverse()
+      .map(
+        (a) =>
+          `<div class="c m">${dt(a.t)} · ${esc(a.a)} ${esc(a.d || "")}</div>`,
+      )
+      .join("") || '<p class="m">No records yet.</p>')
+  );
+}
+function ac() {
+  const m = me(),
+    p = m.prefs,
+    I = [
+      ["Connect and identify cards", "Simulated"],
+      ["Initiate and route contributions", "Simulated"],
+      ["Confirm, fail, reverse payments", "Simulated events"],
+      ["Refunds", "Simulated events"],
+      [
+        "Deadline auto-collection",
+        "Not built. Needs customer authorisation and provider support.",
+      ],
+      ["Transaction detection", "Simulated. Needs provider data access."],
+      ["WhatsApp / SMS delivery", "Queued only. Nothing is sent."],
+    ];
+  return `<h1>Account</h1><div class="c"><b>@${esc(m.username)}</b><div class="m">Phone: ${m.phone ? "linked" : "not linked"} · Google: ${m.google ? "linked" : "not linked"}</div></div><h2>Username</h2><input id="nu" value="${esc(m.username)}"><button class="b s" data-a="uname">Change username</button>
+ <h2>Link another sign-in</h2>${m.phone ? "" : '<input id="lp" placeholder="Phone number"><input id="lo" placeholder="Code (development: 123456)"><button class="b s" data-a="lph">Link phone</button>'}${m.google ? "" : '<input id="lg" placeholder="Google email (simulated)"><button class="b s" data-a="lgo">Link Google</button>'}
+ <h2>Notifications</h2><select data-a="pref" data-v="ch"><option value="whatsapp" ${p.ch === "whatsapp" ? "selected" : ""}>WhatsApp</option><option value="sms" ${p.ch === "sms" ? "selected" : ""}>SMS</option><option value="off" ${p.ch === "off" ? "selected" : ""}>Off</option></select>
+ ${[
+   ["shared", "Expense shared with me"],
+   ["contrib", "Someone contributes"],
+   ["done", "Expense completed"],
+   ["cancel", "Expense cancelled"],
+ ]
+   .map(
+     ([k, l]) =>
+       `<label><input type="checkbox" data-a="pref" data-v="${k}" ${p.ev[k] ? "checked" : ""}> ${l}</label><br>`,
+   )
+   .join("")}
+ <h2>Plan</h2><select data-a="plan"><option value="free" ${S.cfg.plan === "free" ? "selected" : ""}>Free</option><option value="paid" ${S.cfg.plan === "paid" ? "selected" : ""}>Paid (proposed USD 1/month)</option></select><p class="m">Configurable placeholder. No billing is active and nothing is gated.</p>
+ <h2>Integration status</h2>${I.map((i) => `<div class="c row"><span>${i[0]}</span><span class="m">${i[1]}</span></div>`).join("")}<p class="m">Pocket support for these operations is unverified.</p><h2>More</h2><div class="seg"><button class="b s" data-a="sub" data-v="notif">Notifications</button><button class="b s" data-a="sub" data-v="sub">Subscription</button><button class="b s" data-a="sub" data-v="priv">Privacy</button></div><button class="b s" data-a="out">Sign out</button>`;
+}
+function dev() {
+  const m = S.me;
+  const pc = S.cons.filter((c) => c.st === "pending"),
+    rc = S.cons.filter((c) => c.st === "confirmed"),
+    rf = S.refs.filter((r) => r.st === "approved");
+  return `<details><summary>Development simulator (not live)</summary><div class="dev"><b>Provider events</b><div>${pc.map((c) => `${nm(c.u)} ${money(c.amt)} <button class="b" data-a="pe" data-t="pay.ok" data-v="${c.ref}">Succeed</button><button class="b s" data-a="pe" data-t="pay.fail" data-v="${c.ref}">Fail</button><br>`).join("")}${rf.map((r) => `Refund ${nm(r.u)} <button class="b" data-a="pe" data-t="ref.ok" data-v="${r.id}">Succeed</button><button class="b s" data-a="pe" data-t="ref.fail" data-v="${r.id}">Fail</button><br>`).join("")}${rc.map((c) => `Confirmed ${nm(c.u)} ${money(c.amt)} <button class="b s" data-a="pe" data-t="pay.rev" data-v="${c.ref}">Reverse</button><br>`).join("")}<button class="b s" data-a="replay">Replay last event</button></div>
+ <p><b>Bank transaction for ${nm(m)}</b></p><input id="bm" placeholder="Merchant"><input id="ba" placeholder="Amount"><input id="br" placeholder="Transaction reference"><button class="b" data-a="bank">Simulate purchase</button>
+ <p><b>Simulated cards for ${nm(m)} (${U(m).cards.length})</b></p><select id="cn">${CAT.map((c) => `<option>${c}</option>`).join("")}</select><button class="b" data-a="addc">Add simulated card</button><p><b>Test friends for ${nm(m)} (development only)</b></p><select id="fn">${TN.map((t) => `<option>${t}</option>`).join("")}</select><button class="b" data-a="addf" data-v="one">Add friend</button><button class="b s" data-a="addf" data-v="three">Add 3 test friends</button><p><b>Users</b></p><select data-a="sw">${S.users.map((u) => `<option value="${u.id}" ${u.id === m ? "selected" : ""}>@${u.username}</option>`).join("")}</select><input id="su" placeholder="New simulated username"><button class="b" data-a="addu">Add user</button>
+ <p><b>Notification queue (nothing is sent)</b></p>${
+   S.notifs
+     .slice(-6)
+     .reverse()
+     .map(
+       (n) =>
+         `<div>To ${nm(n.to)} via ${n.ch}: ${esc(MSG[n.type](nm(n.actor), X(n.e)?.name))}</div>`,
+     )
+     .join("") || '<div class="m">Empty</div>'
+ }<p><button class="b d" data-a="reset">Reset all data</button></p></div></details>`;
+}
+function authV() {
+  const a = ui.auth || (ui.auth = { m: "google", s: 1 });
+  return `<main><h1>Vantage</h1><p class="m">Track, pool and settle shared expenses. Prototype: sign-in is simulated.</p><div class="seg"><button class="b ${a.m === "google" ? "" : "s"}" data-a="am" data-v="google">Google</button><button class="b ${a.m === "phone" ? "" : "s"}" data-a="am" data-v="phone">Phone</button></div>
+ ${a.s === 1 ? `<input id="av" placeholder="${a.m === "phone" ? "Phone number (+673…)" : "Google email (simulated)"}">` : a.s === 2 ? '<input id="otp" placeholder="Code" inputmode="numeric"><p class="m">Development code: 123456. No SMS is sent.</p>' : '<label>Choose a unique username</label><input id="un">'}
+ <button class="b" data-a="ago">Continue</button><p id="msg" role="status">${esc(ui.msg || "")}</p></main>`;
+}
+function render() {
+  const root = $("#app");
+  if (S.me && S.sessAt && Date.now() - S.sessAt > 18e5) {
+    S.me = null;
+    ui = { tab: "home", msg: "Signed out after 30 minutes of inactivity." };
+  }
+  if (!me()) {
+    root.innerHTML = authV();
+    save();
+    return;
+  }
+  let b = ui.sub
+    ? sub()
+    : ui.txd
+      ? txd()
+      : ui.newx
+        ? form()
+        : ui.exp
+          ? detail(ui.exp)
+          : { home, tx, fr, hi, ac }[ui.tab]();
+  root.innerHTML = `<main><p id="msg" role="status">${esc(ui.msg || "")}</p>${b}</main>${dev()}<nav>${[
+    ["home", "Home"],
+    ["tx", "Transactions"],
+    ["fr", "Friends"],
+    ["hi", "History"],
+    ["ac", "Account"],
+  ]
+    .map(
+      ([k, l]) =>
+        `<button class="${ui.tab === k ? "on" : ""}" data-a="tab" data-v="${k}">${l}</button>`,
+    )
+    .join("")}</nav>`;
+  save();
+}
+render();

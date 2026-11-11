@@ -1,0 +1,227 @@
+:root {
+  --bg: #f2f5f4;
+  --sf: #fff;
+  --ink: #0f2a2e;
+  --mut: #5b7074;
+  --ln: #d9e2e1;
+  --ac: #0b6e6e;
+  --on: #fff;
+  --hi: #f2b705;
+  --bad: #b3261e;
+  --ok: #1b7a3d;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #0d1b1e;
+    --sf: #14282c;
+    --ink: #e8f1f0;
+    --mut: #93a9ac;
+    --ln: #254044;
+    --ac: #4fc3c3;
+    --on: #062326;
+    --bad: #ff8a80;
+    --ok: #6fd48f;
+  }
+}
+:root[data-theme='dark'] {
+  --bg: #0d1b1e;
+  --sf: #14282c;
+  --ink: #e8f1f0;
+  --mut: #93a9ac;
+  --ln: #254044;
+  --ac: #4fc3c3;
+  --on: #062326;
+  --bad: #ff8a80;
+  --ok: #6fd48f;
+}
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+}
+html {
+  scroll-padding-top: env(safe-area-inset-top, 0px);
+}
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font:
+    16px/1.45 'Bricolage Grotesque',
+    system-ui,
+    sans-serif;
+}
+main {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 16px 16px 96px;
+}
+h1 {
+  font-size: 28px;
+  font-weight: 800;
+  margin: 8px 0 14px;
+  letter-spacing: -0.02em;
+}
+h2 {
+  font-size: 18px;
+  margin: 22px 0 8px;
+}
+.c {
+  background: var(--sf);
+  border: 1px solid var(--ln);
+  border-radius: 14px;
+  padding: 14px;
+  margin: 10px 0;
+  display: block;
+  width: 100%;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+}
+button.c {
+  cursor: pointer;
+}
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: baseline;
+}
+.m {
+  color: var(--mut);
+  font-size: 14px;
+}
+.b {
+  background: var(--ac);
+  color: var(--on);
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font: 600 15px inherit;
+  cursor: pointer;
+}
+.b.s {
+  background: transparent;
+  color: var(--ac);
+  border: 1.5px solid var(--ac);
+}
+.b.d {
+  background: var(--bad);
+  color: #fff;
+}
+input,
+select {
+  font: inherit;
+  color: inherit;
+  background: var(--bg);
+  border: 1px solid var(--ln);
+  border-radius: 10px;
+  padding: 10px;
+  width: 100%;
+  margin: 4px 0;
+}
+input[type='checkbox'] {
+  width: auto;
+}
+label {
+  font-size: 14px;
+  color: var(--mut);
+}
+.bar {
+  display: flex;
+  height: 14px;
+  border-radius: 7px;
+  overflow: hidden;
+  background: var(--ln);
+  margin: 10px 0;
+}
+.bar i {
+  display: block;
+  height: 100%;
+}
+nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--sf);
+  border-top: 1px solid var(--ln);
+  display: flex;
+  justify-content: center;
+  padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
+}
+nav button {
+  flex: 1;
+  max-width: 120px;
+  background: none;
+  border: 0;
+  color: var(--mut);
+  font: 600 13px inherit;
+  padding: 10px 2px;
+  cursor: pointer;
+}
+nav button.on {
+  color: var(--ac);
+  box-shadow: inset 0 -3px var(--hi);
+}
+.tag {
+  font-size: 12px;
+  border: 1px solid var(--ln);
+  border-radius: 99px;
+  padding: 1px 8px;
+  color: var(--mut);
+}
+.ok {
+  color: var(--ok);
+}
+.bad {
+  color: var(--bad);
+}
+#msg {
+  min-height: 20px;
+  color: var(--ac);
+  font-weight: 600;
+  margin: 0;
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  background: var(--bg);
+  padding: 6px 0;
+  z-index: 5;
+}
+.seg {
+  display: flex;
+  gap: 8px;
+  margin: 8px 0;
+}
+.seg .b {
+  flex: 1;
+}
+details {
+  max-width: 640px;
+  margin: 0 auto 90px;
+  padding: 0 16px;
+}
+summary {
+  cursor: pointer;
+  color: var(--mut);
+}
+.dev {
+  border: 1.5px dashed var(--hi);
+  border-radius: 12px;
+  padding: 12px;
+  margin-top: 8px;
+  font-size: 14px;
+}
+.dev .b {
+  padding: 5px 9px;
+  font-size: 13px;
+  margin: 2px;
+}
+:focus-visible {
+  outline: 3px solid var(--hi);
+  outline-offset: 2px;
+}
