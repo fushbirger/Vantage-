@@ -1,6 +1,8 @@
 # Vantage
 
-**Brunei's effortless, non-custodial group expense splitter and money-pooling companion.**
+<div align="center">
+  <p><strong>Brunei's effortless, non-custodial group expense splitter and money-pooling companion.</strong></p>
+</div>
 
 <div align="center">
   <img src="assets/logo.png" width="200" alt="Vantage Logo">
