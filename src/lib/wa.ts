@@ -15,7 +15,11 @@ export type WhatsAppTemplate =
   | "settlement_confirmed"
   | "settlement_rejected"
   | "payment_reminder"
-  | "group_invite";
+  | "group_invite"
+  | "expense_confirm_request"
+  | "expense_resolved"
+  | "connection_request"
+  | "connection_accepted";
 
 export const TEMPLATE_LABELS: Record<WhatsAppTemplate, string> = {
   expense_added: "Expense added",
@@ -26,6 +30,10 @@ export const TEMPLATE_LABELS: Record<WhatsAppTemplate, string> = {
   settlement_rejected: "Payment disputed",
   payment_reminder: "Payment reminder",
   group_invite: "Group invite",
+  expense_confirm_request: "Confirm expense",
+  expense_resolved: "Expense answered",
+  connection_request: "Connection request",
+  connection_accepted: "Connection accepted",
 };
 
 export function appBaseUrl(): string {
@@ -41,6 +49,10 @@ export function settleUrl(groupId: string): string {
 
 export function groupUrl(groupId: string): string {
   return `${appBaseUrl()}/groups/${groupId}`;
+}
+
+export function connectionsUrl(): string {
+  return `${appBaseUrl()}/connections`;
 }
 
 /** Normalise a Brunei phone number for wa.me links. */
@@ -129,6 +141,45 @@ export function expenseAddedBody(input: {
   yourShareCents: number;
 }): string {
   return `💸 ${input.actorName} added “${input.title}” (${formatBnd(input.amountBndCents)}) in ${input.groupName}.\nYour share: ${formatBnd(input.yourShareCents)}.\nOpen Vantage: ${groupUrl(input.groupId)}`;
+}
+
+export function expenseConfirmRequestBody(input: {
+  actorName: string;
+  title: string;
+  amountBndCents: number;
+  groupName: string;
+  groupId: string;
+  yourShareCents: number;
+  paidByYou: boolean;
+}): string {
+  const involvement = input.paidByYou
+    ? "It says you paid."
+    : `Your share: ${formatBnd(input.yourShareCents)}.`;
+  return `🧾 ${input.actorName} wants to add “${input.title}” (${formatBnd(input.amountBndCents)}) in ${input.groupName}. ${involvement}\nIt only counts once you confirm. Answer here: ${groupUrl(input.groupId)}`;
+}
+
+export function expenseResolvedBody(input: {
+  actorName: string;
+  title: string;
+  groupName: string;
+  groupId: string;
+  outcome: "confirmed" | "rejected" | "partial";
+}): string {
+  if (input.outcome === "confirmed") {
+    return `✅ Everyone confirmed “${input.title}” in ${input.groupName}. It is now on the ledger.\n${groupUrl(input.groupId)}`;
+  }
+  if (input.outcome === "rejected") {
+    return `⚠️ ${input.actorName} did not confirm “${input.title}” in ${input.groupName}, so it was not added to anyone's balance.\n${groupUrl(input.groupId)}`;
+  }
+  return `👍 ${input.actorName} confirmed “${input.title}” in ${input.groupName}. Still waiting on others.\n${groupUrl(input.groupId)}`;
+}
+
+export function connectionRequestBody(input: { actorName: string }): string {
+  return `🤝 ${input.actorName} wants to connect with you on Vantage so you can share groups. Accept or ignore: ${connectionsUrl()}`;
+}
+
+export function connectionAcceptedBody(input: { actorName: string }): string {
+  return `✅ ${input.actorName} accepted your connection on Vantage. You can now invite each other to groups: ${connectionsUrl()}`;
 }
 
 export function poolCreatedBody(input: {

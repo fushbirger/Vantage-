@@ -31,7 +31,9 @@ CREATE TABLE IF NOT EXISTS "groups" (
               CHECK (kind IN ('trip', 'dinner', 'gift', 'home', 'other')),
   description TEXT,
   created_by  TEXT NOT NULL REFERENCES users(id),
-  created_at  INTEGER NOT NULL
+  created_at  INTEGER NOT NULL,
+  -- 1 = every expense needs a yes from each other person it touches.
+  require_confirmation INTEGER NOT NULL DEFAULT 1
 );
 
 CREATE TABLE IF NOT EXISTS group_members (
@@ -40,6 +42,9 @@ CREATE TABLE IF NOT EXISTS group_members (
   user_id   TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   role      TEXT NOT NULL DEFAULT 'member' CHECK (role IN ('owner', 'member')),
   joined_at INTEGER NOT NULL,
+  -- 'invited' people have not accepted: no ledger access, cannot be in expenses.
+  status    TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('invited', 'active')),
+  invited_by TEXT REFERENCES users(id),
   UNIQUE (group_id, user_id)
 );
 
@@ -59,7 +64,34 @@ CREATE TABLE IF NOT EXISTS expenses (
   items_json       TEXT,                                            -- itemisation [{name, amountCents}]
   notes            TEXT,
   spent_at         INTEGER NOT NULL,
-  created_at       INTEGER NOT NULL
+  created_at       INTEGER NOT NULL,
+  created_by       TEXT REFERENCES users(id),                       -- who entered it (may differ from payer)
+  status           TEXT NOT NULL DEFAULT 'confirmed'
+                   CHECK (status IN ('pending', 'confirmed', 'rejected')),
+  resolved_at      INTEGER
+);
+
+-- One row per person who must say yes before an expense reaches the ledger.
+CREATE TABLE IF NOT EXISTS expense_confirmations (
+  id           TEXT PRIMARY KEY,
+  expense_id   TEXT NOT NULL REFERENCES expenses(id) ON DELETE CASCADE,
+  user_id      TEXT NOT NULL REFERENCES users(id),
+  status       TEXT NOT NULL DEFAULT 'pending'
+               CHECK (status IN ('pending', 'confirmed', 'rejected')),
+  responded_at INTEGER,
+  UNIQUE (expense_id, user_id)
+);
+
+-- Account connections: a mutual, accepted link between two people.
+-- Only connected people can be invited into the same group.
+CREATE TABLE IF NOT EXISTS connections (
+  id           TEXT PRIMARY KEY,
+  requester_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  addressee_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  status       TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted')),
+  created_at   INTEGER NOT NULL,
+  responded_at INTEGER,
+  CHECK (requester_id <> addressee_id)
 );
 
 CREATE TABLE IF NOT EXISTS expense_splits (
@@ -139,3 +171,7 @@ CREATE INDEX IF NOT EXISTS idx_settlements_group ON settlements(group_id, create
 CREATE INDEX IF NOT EXISTS idx_pools_group ON pools(group_id);
 CREATE INDEX IF NOT EXISTS idx_pledges_pool ON pool_pledges(pool_id);
 CREATE INDEX IF NOT EXISTS idx_outbox_user ON whatsapp_outbox(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_confirmations_expense ON expense_confirmations(expense_id);
+CREATE INDEX IF NOT EXISTS idx_confirmations_user ON expense_confirmations(user_id, status);
+CREATE INDEX IF NOT EXISTS idx_connections_requester ON connections(requester_id);
+CREATE INDEX IF NOT EXISTS idx_connections_addressee ON connections(addressee_id);

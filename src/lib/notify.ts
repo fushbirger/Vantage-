@@ -19,6 +19,7 @@ interface TargetRow {
 export function notificationTargets(
   groupId: string,
   excludeUserId?: string,
+  includeInvited = false,
 ): NotifyTarget[] {
   const rows = db
     .prepare(
@@ -27,9 +28,10 @@ export function notificationTargets(
        FROM group_members gm
        JOIN users u ON u.id = gm.user_id
        LEFT JOIN payment_profiles p ON p.user_id = u.id
-       WHERE gm.group_id = ?`,
+       WHERE gm.group_id = ?
+         AND (gm.status = 'active' OR ? = 1)`,
     )
-    .all(groupId) as TargetRow[];
+    .all(groupId, includeInvited ? 1 : 0) as TargetRow[];
 
   return rows
     .filter(
@@ -70,7 +72,7 @@ export async function notifyTargets(
 
 export async function notifyUser(input: {
   userId: string;
-  groupId: string;
+  groupId: string | null;
   template: WhatsAppTemplate;
   body: string;
 }): Promise<void> {

@@ -1,5 +1,6 @@
 import "server-only";
 import { NextResponse } from "next/server";
+import { CollabError } from "./errors";
 import { getCurrentUser } from "./session";
 import type { User } from "./types";
 
@@ -19,6 +20,7 @@ export async function withUser(
   try {
     return await handler(user);
   } catch (error) {
+    if (error instanceof CollabError) return apiError(error.message, error.status);
     console.error(error);
     const message =
       error instanceof Error ? error.message : "Something went wrong.";

@@ -55,10 +55,13 @@ export function AddExpenseButton({
   groupId,
   members,
   currentUserId,
+  requireConfirmation = false,
 }: {
   groupId: string;
   members: MemberOption[];
   currentUserId: string;
+  /** When true, the other people involved must confirm before it counts. */
+  requireConfirmation?: boolean;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -267,6 +270,17 @@ export function AddExpenseButton({
       setSaving(false);
     }
   }
+
+  // Mirrors the server rule: payer + everyone in the split, except me.
+  const confirmerNames = requireConfirmation
+    ? members
+        .filter(
+          (member) =>
+            member.userId !== currentUserId &&
+            (selected.has(member.userId) || member.userId === paidBy),
+        )
+        .map((member) => member.name)
+    : [];
 
   const itemsTotal = items.reduce(
     (sum, item) => sum + parseAmountToCents(item.amount),
@@ -717,6 +731,14 @@ export function AddExpenseButton({
             </p>
           </div>
 
+          {requireConfirmation && (
+            <p className="rounded-2xl border border-amber-300/60 bg-amber-100/40 px-3.5 py-2.5 text-xs leading-relaxed text-ink/75">
+              {confirmerNames.length > 0
+                ? `Needs a yes from ${confirmerNames.join(", ")} before it counts toward anyone's balance.`
+                : "Only you are involved, so this goes straight onto the ledger."}
+            </p>
+          )}
+
           <div className="flex gap-2 pt-1">
             <button
               type="button"
@@ -726,7 +748,11 @@ export function AddExpenseButton({
               Cancel
             </button>
             <button type="submit" disabled={saving} className="btn flex-1">
-              {saving ? "Saving…" : "Add expense"}
+              {saving
+                ? "Saving…"
+                : confirmerNames.length > 0
+                  ? "Send for confirmation"
+                  : "Add expense"}
             </button>
           </div>
         </form>

@@ -1,10 +1,7 @@
 import { NextResponse } from "next/server";
 import { readJson, withUser } from "@/lib/api";
-import {
-  createGroup,
-  getGroupsForUser,
-  getUsers,
-} from "@/lib/queries";
+import { getConnectedUsers } from "@/lib/collab";
+import { createGroup, getGroupsForUser } from "@/lib/queries";
 import { notifyTargets, notificationTargets } from "@/lib/notify";
 import { isGroupKind, text } from "@/lib/validation";
 import { groupUrl } from "@/lib/wa";
@@ -33,8 +30,17 @@ export async function POST(request: Request) {
       );
     }
 
-    const validIds = new Set(getUsers().map((person) => person.id));
-    const memberIds = requestedIds.filter((id) => validIds.has(id));
+    // Only accepted connections can be invited: no pulling strangers in.
+    const validIds = new Set(
+      getConnectedUsers(user.id).map((person) => person.id),
+    );
+    if (requestedIds.some((id) => id !== user.id && !validIds.has(id))) {
+      return NextResponse.json(
+        { error: "You can only invite people you are connected with." },
+        { status: 400 },
+      );
+    }
+    const memberIds = requestedIds.filter((id) => id !== user.id);
 
     const group = createGroup({
       name,
@@ -45,15 +51,18 @@ export async function POST(request: Request) {
       memberIds,
     });
 
-    // A friendly invite for members who use WhatsApp.
+    // Invitees are not members yet, so notify them by id.
     if (memberIds.length) {
       try {
-        const targets = notificationTargets(group.id, user.id);
+        const invitedIds = new Set(memberIds);
+        const targets = notificationTargets(group.id, user.id, true).filter(
+          (target) => invitedIds.has(target.userId),
+        );
         await notifyTargets(targets, {
           groupId: group.id,
           template: "group_invite",
           body: () =>
-            `${user.name} added you to “${group.name}” ${group.emoji} on Vantage.\nOpen the group: ${groupUrl(group.id)}\nNo money is held by Vantage — it is just the shared ledger.`,
+            `${user.name} invited you to “${group.name}” ${group.emoji} on Vantage.\nAccept or decline: ${groupUrl(group.id).replace(/\/groups\/.*/, "/groups")}\nNothing is added to your ledger until you accept. Vantage never holds money.`,
         });
       } catch (error) {
         console.error("WhatsApp invite queue failed", error);

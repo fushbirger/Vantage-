@@ -6,6 +6,7 @@ import {
   CalendarDays,
   CheckCircle2,
   ChevronDown,
+  Clock,
   Handshake,
   MessageCircle,
   Receipt,
@@ -17,6 +18,12 @@ import {
 import { Avatar, AvatarStack } from "@/components/Avatar";
 import { AddExpenseButton } from "@/components/AddExpenseButton";
 import { CreatePoolButton } from "@/components/CreatePoolButton";
+import { ExpenseConfirmButtons } from "@/components/ExpenseConfirmButtons";
+import { GroupSettingsCard } from "@/components/GroupSettingsCard";
+import {
+  CancelInviteButton,
+  InviteMembersButton,
+} from "@/components/InviteMembersButton";
 import { PledgeButton } from "@/components/PledgeButton";
 import { ShareWhatsAppButton } from "@/components/ShareWhatsAppButton";
 import {
@@ -32,6 +39,8 @@ import {
   RAIL_LABELS,
   SPLIT_RULE_LABELS,
 } from "@/lib/display";
+import { confirmationProgress } from "@/lib/confirmation";
+import { getConnectedUsers } from "@/lib/collab";
 import { getGroup, getGroupLedger } from "@/lib/queries";
 import { getCurrentUser } from "@/lib/session";
 import { buildShareSummary } from "@/lib/wa";
@@ -56,6 +65,14 @@ function ExpenseRow({
 }) {
   const category = categoryFor(expense.category);
   const mySplit = expense.splits.find((split) => split.userId === currentUserId);
+  const myConfirmation = expense.confirmations.find(
+    (confirmation) => confirmation.userId === currentUserId,
+  );
+  const progress = confirmationProgress(
+    expense.confirmations.map((confirmation) => confirmation.status),
+  );
+  const waitingOnMe = expense.status === "pending" && myConfirmation?.status === "pending";
+  const iWroteIt = expense.createdBy === currentUserId;
 
   return (
     <details className="group card-flat overflow-hidden transition open:shadow-soft">
@@ -70,6 +87,21 @@ function ExpenseRow({
             </span>
             {expense.receiptData && (
               <Receipt className="h-3.5 w-3.5 shrink-0 text-teal-600" />
+            )}
+            {expense.status === "pending" && (
+              <span
+                className={`pill shrink-0 ${
+                  waitingOnMe ? "bg-coral/10 text-coral" : "bg-amber-300/60 text-ink/80"
+                }`}
+              >
+                <Clock className="h-3 w-3" />
+                {waitingOnMe
+                  ? "needs you"
+                  : `${progress.confirmed}/${progress.total} yes`}
+              </span>
+            )}
+            {expense.status === "rejected" && (
+              <span className="pill shrink-0 bg-coral/10 text-coral">rejected</span>
             )}
           </span>
           <span className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-muted">
@@ -141,6 +173,50 @@ function ExpenseRow({
             </div>
           ))}
         </div>
+
+        {expense.status !== "confirmed" && (
+          <div className="mt-4 rounded-2xl border border-amber-300/60 bg-amber-100/40 p-3">
+            <p className="stat-label">
+              {expense.status === "pending"
+                ? "Not on the ledger until everyone confirms"
+                : "Rejected — not in anyone's balance"}
+            </p>
+            <p className="mt-1 text-xs text-muted">
+              Added by {iWroteIt ? "you" : (expense.creatorName ?? "someone")}
+              {expense.createdBy === expense.paidBy ? "" : ` for ${expense.payerName}`}.
+            </p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {expense.confirmations.map((confirmation) => (
+                <span
+                  key={confirmation.userId}
+                  className={`chip ${
+                    confirmation.status === "confirmed"
+                      ? "chip-active"
+                      : confirmation.status === "rejected"
+                        ? "border-coral/30 text-coral"
+                        : ""
+                  }`}
+                >
+                  {confirmation.status === "confirmed"
+                    ? "✓"
+                    : confirmation.status === "rejected"
+                      ? "✕"
+                      : "…"}{" "}
+                  {confirmation.userId === currentUserId ? "You" : confirmation.userName}
+                </span>
+              ))}
+            </div>
+            {(waitingOnMe || iWroteIt) && (
+              <div className="mt-3">
+                <ExpenseConfirmButtons
+                  expenseId={expense.id}
+                  mode={waitingOnMe ? "answer" : "withdraw"}
+                  compact
+                />
+              </div>
+            )}
+          </div>
+        )}
 
         {expense.items.length > 0 && (
           <>
@@ -215,6 +291,27 @@ export default async function GroupPage({
     transfers: ledger.transfers,
   });
   const activePool = ledger.pools[0];
+  const myRole = ledger.members.find((member) => member.userId === user.id)?.role;
+  const isOwner = myRole === "owner";
+  const inGroup = new Set([
+    ...ledger.members.map((member) => member.userId),
+    ...ledger.invited.map((member) => member.userId),
+  ]);
+  const inviteCandidates = isOwner
+    ? getConnectedUsers(user.id)
+        .filter((person) => !inGroup.has(person.id))
+        .map((person) => ({
+          id: person.id,
+          name: person.name,
+          username: person.username,
+          avatarColor: person.avatarColor,
+        }))
+    : [];
+  const waitingOnMeCount = ledger.pendingExpenses.filter((expense) =>
+    expense.confirmations.some(
+      (c) => c.userId === user.id && c.status === "pending",
+    ),
+  ).length;
 
   return (
     <div className="space-y-5">
@@ -264,6 +361,7 @@ export default async function GroupPage({
               <AddExpenseButton
                 groupId={ledger.group.id}
                 currentUserId={user.id}
+                requireConfirmation={Boolean(ledger.group.requireConfirmation)}
                 members={ledger.members.map((member) => ({
                   userId: member.userId,
                   name: member.name,
@@ -426,6 +524,33 @@ export default async function GroupPage({
             )}
           </section>
 
+          {(ledger.pendingExpenses.length > 0 ||
+            ledger.rejectedExpenses.length > 0) && (
+            <section className="rounded-3xl border border-amber-300/60 bg-amber-100/30 p-4 sm:p-5">
+              <h2 className="section-title flex items-center gap-2">
+                <Clock className="h-4 w-4 text-amber-500" /> Waiting for confirmation
+              </h2>
+              <p className="mt-1 text-xs text-muted">
+                {waitingOnMeCount > 0
+                  ? `${waitingOnMeCount} need${waitingOnMeCount === 1 ? "s" : ""} your yes. `
+                  : ""}
+                These are not in anyone&apos;s balance until everyone they touch
+                has confirmed.
+              </p>
+              <div className="mt-3 space-y-2.5">
+                {[...ledger.pendingExpenses, ...ledger.rejectedExpenses].map(
+                  (expense) => (
+                    <ExpenseRow
+                      key={expense.id}
+                      expense={expense}
+                      currentUserId={user.id}
+                    />
+                  ),
+                )}
+              </div>
+            </section>
+          )}
+
           <section>
             <div className="mb-3 flex items-end justify-between gap-3">
               <div>
@@ -440,6 +565,7 @@ export default async function GroupPage({
               <AddExpenseButton
                 groupId={ledger.group.id}
                 currentUserId={user.id}
+                requireConfirmation={Boolean(ledger.group.requireConfirmation)}
                 members={ledger.members.map((member) => ({
                   userId: member.userId,
                   name: member.name,
@@ -590,8 +716,14 @@ export default async function GroupPage({
               <h2 className="section-title flex items-center gap-2">
                 <UsersRound className="h-4 w-4 text-teal-700" /> Members
               </h2>
-              <span className="text-xs font-semibold text-muted">
+              <span className="flex items-center gap-1 text-xs font-semibold text-muted">
                 {ledger.members.length}
+                {isOwner && (
+                  <InviteMembersButton
+                    groupId={ledger.group.id}
+                    candidates={inviteCandidates}
+                  />
+                )}
               </span>
             </div>
             <div className="mt-3 divide-soft">
@@ -639,7 +771,36 @@ export default async function GroupPage({
                 );
               })}
             </div>
+            {ledger.invited.length > 0 && (
+              <div className="mt-3 border-t border-line/80 pt-3">
+                <p className="stat-label">Invited · not joined yet</p>
+                <div className="divide-soft mt-1">
+                  {ledger.invited.map((member) => (
+                    <div key={member.userId} className="flex items-center gap-2.5 py-2.5">
+                      <Avatar name={member.name} color={member.avatarColor} size="sm" />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold">{member.name}</p>
+                        <p className="truncate text-[11px] text-muted">@{member.username}</p>
+                      </div>
+                      <span className="pill bg-amber-300/60 text-ink/80">Invited</span>
+                      {isOwner && (
+                        <CancelInviteButton
+                          groupId={ledger.group.id}
+                          userId={member.userId}
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </section>
+
+          <GroupSettingsCard
+            groupId={ledger.group.id}
+            requireConfirmation={Boolean(ledger.group.requireConfirmation)}
+            isOwner={isOwner}
+          />
 
           {activePool && (
             <section className="rounded-3xl border border-amber-300/50 bg-amber-100/50 p-5">

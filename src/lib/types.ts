@@ -6,6 +6,12 @@ export type PreferredRail = "tarus" | "tarusqr" | "pocket";
 
 export type SettlementStatus = "pending" | "completed" | "rejected";
 
+/** Lifecycle of an expense under multi-side confirmation. */
+export type ExpenseStatus = "pending" | "confirmed" | "rejected";
+export type ConfirmationStatus = "pending" | "confirmed" | "rejected";
+export type MemberStatus = "active" | "invited";
+export type ConnectionStatus = "pending" | "accepted";
+
 export interface User {
   id: string;
   username: string;
@@ -36,6 +42,8 @@ export interface Group {
   description: string | null;
   createdBy: string;
   createdAt: number;
+  /** 1 when every expense needs a yes from each other person it touches. */
+  requireConfirmation: number;
 }
 
 export interface GroupMember {
@@ -43,6 +51,8 @@ export interface GroupMember {
   groupId: string;
   userId: string;
   role: "owner" | "member";
+  status: MemberStatus;
+  invitedBy: string | null;
   joinedAt: number;
   name: string;
   username: string;
@@ -66,8 +76,19 @@ export interface Expense {
   notes: string | null;
   spentAt: number;
   createdAt: number;
+  createdBy: string | null;
+  status: ExpenseStatus;
+  resolvedAt: number | null;
   payerName: string;
   payerColor: string;
+}
+
+export interface ExpenseConfirmation {
+  userId: string;
+  status: ConfirmationStatus;
+  respondedAt: number | null;
+  userName: string;
+  userColor: string;
 }
 
 export interface ExpenseItem {
@@ -89,6 +110,52 @@ export interface ExpenseSplit {
 export interface ExpenseWithSplits extends Expense {
   splits: ExpenseSplit[];
   items: ExpenseItem[];
+  confirmations: ExpenseConfirmation[];
+  creatorName: string | null;
+}
+
+/** A pending expense that needs the current user's answer. */
+export interface ExpenseAwaitingMe {
+  id: string;
+  groupId: string;
+  groupName: string;
+  groupEmoji: string;
+  title: string;
+  amountBndCents: number;
+  creatorName: string;
+  paidByYou: boolean;
+  yourShareCents: number;
+  createdAt: number;
+}
+
+export interface ConnectionEntry {
+  id: string;
+  status: ConnectionStatus;
+  createdAt: number;
+  user: Pick<User, "id" | "username" | "name" | "avatarColor">;
+}
+
+export interface ConnectionOverview {
+  connected: ConnectionEntry[];
+  /** Requests other people sent to me. */
+  incoming: ConnectionEntry[];
+  /** Requests I sent that are still waiting. */
+  outgoing: ConnectionEntry[];
+}
+
+export interface GroupInvite {
+  groupId: string;
+  groupName: string;
+  groupEmoji: string;
+  invitedByName: string | null;
+  invitedAt: number;
+}
+
+export interface AttentionCounts {
+  expenses: number;
+  connections: number;
+  invites: number;
+  total: number;
 }
 
 export interface Settlement {

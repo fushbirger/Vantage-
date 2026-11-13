@@ -132,6 +132,35 @@ New accounts can also be created from the login screen (display name, username, 
 
 ---
 
+## Account connections and multi-side confirmation
+
+Nobody can put an expense on another person's ledger on their own.
+
+- **People (`/connections`)** — connect by username. A request must be accepted
+  by the other person (crossing requests auto-accept). Only accepted
+  connections can be invited to a group.
+- **Invitations** — the group owner invites connections; they stay `invited`
+  (no ledger access, cannot be in a split or settlement) until they accept or
+  decline. The owner can withdraw a pending invitation.
+- **Multi-side confirmation** — a per-group switch (owner only, on by default).
+  When on, an expense needs a yes from the payer and from every person in the
+  split, except its author (submitting is the author's yes). It stays
+  `pending` and out of balances and totals until everyone confirms; one *no*
+  marks it `rejected`. The author can withdraw anything not yet confirmed.
+  Every answer is notified over WhatsApp (simulated without credentials).
+- **Existing databases** — `db.ts` migrates old databases once
+  (`PRAGMA user_version = 1`): adds the new columns, marks existing expenses
+  confirmed, and connects people who already share a group.
+
+New routes: `GET/POST /api/connections`, `PATCH/DELETE /api/connections/[id]`,
+`PATCH /api/groups/[id]` (`requireConfirmation`), `POST /api/groups/[id]/invite`,
+`POST/DELETE /api/groups/[id]/members`, `POST /api/expenses/[id]`
+(`confirm` / `reject` / `withdraw`).
+
+Demo data adds **dayang** (a request waiting for Aiman, and an invitation to
+Friday Dinner) and one pending expense, "Ice cream — Pelita Mall", waiting for
+Aiman and Sofia.
+
 ## Stack
 
 | Layer | Choice |

@@ -2,8 +2,11 @@ import "server-only";
 import { db } from "./db";
 import { computeNetBalances, totalSpendCents } from "./balances";
 import { simplifyDebts, transfersWithPeople, type NetBalance } from "./simplify";
+import { resolveExpenseStatus } from "./confirmation";
 import type {
   Balance,
+  ExpenseConfirmation,
+  ExpenseStatus,
   ExpenseWithSplits,
   Group,
   GroupMember,
@@ -20,7 +23,7 @@ import type {
 const USER_COLS =
   "id, username, name, phone, avatar_color AS avatarColor, created_at AS createdAt";
 
-const GROUP_COLS = `id, name, emoji, kind, description, created_by AS createdBy, created_at AS createdAt`;
+const GROUP_COLS = `id, name, emoji, kind, description, created_by AS createdBy, created_at AS createdAt, require_confirmation AS requireConfirmation`;
 
 const AVATAR_COLORS = [
   "#0f6b5d",
@@ -33,8 +36,16 @@ const AVATAR_COLORS = [
 
 export interface GroupLedger {
   group: Group;
+  /** Active members only: the people the ledger is about. */
   members: GroupMember[];
+  /** Invited but not yet accepted. No ledger access, cannot be in expenses. */
+  invited: GroupMember[];
+  /** Confirmed expenses only: balances and totals use exactly these. */
   expenses: ExpenseWithSplits[];
+  /** Waiting for at least one person to confirm; not in balances yet. */
+  pendingExpenses: ExpenseWithSplits[];
+  /** Rejected by someone it touches; kept for the record, never in balances. */
+  rejectedExpenses: ExpenseWithSplits[];
   settlements: Settlement[];
   pools: PoolWithPledges[];
   balances: Balance[];
@@ -199,15 +210,29 @@ export function getGroup(groupId: string): Group | null {
   );
 }
 
+const MEMBER_COLS = `gm.id, gm.group_id AS groupId, gm.user_id AS userId, gm.role,
+              gm.status, gm.invited_by AS invitedBy, gm.joined_at AS joinedAt,
+              u.name, u.username, u.phone, u.avatar_color AS avatarColor`;
+
+/** Active members: the only people a ledger, split or settlement may involve. */
 export function getGroupMembers(groupId: string): GroupMember[] {
   return db
     .prepare(
-      `SELECT gm.id, gm.group_id AS groupId, gm.user_id AS userId, gm.role,
-              gm.joined_at AS joinedAt, u.name, u.username, u.phone,
-              u.avatar_color AS avatarColor
+      `SELECT ${MEMBER_COLS}
        FROM group_members gm JOIN users u ON u.id = gm.user_id
-       WHERE gm.group_id = ?
+       WHERE gm.group_id = ? AND gm.status = 'active'
        ORDER BY CASE gm.role WHEN 'owner' THEN 0 ELSE 1 END, u.name`,
+    )
+    .all(groupId) as GroupMember[];
+}
+
+export function getInvitedMembers(groupId: string): GroupMember[] {
+  return db
+    .prepare(
+      `SELECT ${MEMBER_COLS}
+       FROM group_members gm JOIN users u ON u.id = gm.user_id
+       WHERE gm.group_id = ? AND gm.status = 'invited'
+       ORDER BY u.name`,
     )
     .all(groupId) as GroupMember[];
 }
@@ -216,7 +241,7 @@ export function isGroupMember(groupId: string, userId: string): boolean {
   return Boolean(
     db
       .prepare(
-        "SELECT 1 FROM group_members WHERE group_id = ? AND user_id = ?",
+        "SELECT 1 FROM group_members WHERE group_id = ? AND user_id = ? AND status = 'active'",
       )
       .get(groupId, userId),
   );
@@ -226,9 +251,10 @@ export function getGroupsForUser(userId: string): Group[] {
   return db
     .prepare(
       `SELECT g.id, g.name, g.emoji, g.kind, g.description,
-              g.created_by AS createdBy, g.created_at AS createdAt
+              g.created_by AS createdBy, g.created_at AS createdAt,
+              g.require_confirmation AS requireConfirmation
        FROM "groups" g JOIN group_members gm ON gm.group_id = g.id
-       WHERE gm.user_id = ?
+       WHERE gm.user_id = ? AND gm.status = 'active'
        ORDER BY g.created_at DESC`,
     )
     .all(userId) as Group[];
@@ -282,14 +308,33 @@ function getExpenses(groupId: string): ExpenseWithSplits[] {
               e.amount_bnd_cents AS amountBndCents, e.split_rule AS splitRule,
               e.receipt_data AS receiptData, e.items_json AS itemsJson, e.notes,
               e.spent_at AS spentAt, e.created_at AS createdAt,
-              u.name AS payerName, u.avatar_color AS payerColor
-       FROM expenses e JOIN users u ON u.id = e.paid_by
+              e.created_by AS createdBy, e.status, e.resolved_at AS resolvedAt,
+              u.name AS payerName, u.avatar_color AS payerColor,
+              cu.name AS creatorName
+       FROM expenses e
+       JOIN users u ON u.id = e.paid_by
+       LEFT JOIN users cu ON cu.id = e.created_by
        WHERE e.group_id = ?
        ORDER BY e.spent_at DESC, e.created_at DESC`,
     )
     .all(groupId) as Array<
-    Omit<ExpenseWithSplits, "splits" | "items"> & { itemsJson: string | null }
+    Omit<ExpenseWithSplits, "splits" | "items" | "confirmations"> & {
+      itemsJson: string | null;
+    }
   >;
+
+  const confirmations = db
+    .prepare(
+      `SELECT c.expense_id AS expenseId, c.user_id AS userId, c.status,
+              c.responded_at AS respondedAt, u.name AS userName,
+              u.avatar_color AS userColor
+       FROM expense_confirmations c
+       JOIN expenses e ON e.id = c.expense_id
+       JOIN users u ON u.id = c.user_id
+       WHERE e.group_id = ?
+       ORDER BY u.name`,
+    )
+    .all(groupId) as Array<ExpenseConfirmation & { expenseId: string }>;
 
   const splits = db
     .prepare(
@@ -307,6 +352,9 @@ function getExpenses(groupId: string): ExpenseWithSplits[] {
   return expenses.map((expense) => ({
     ...expense,
     splits: splits.filter((s) => s.expenseId === expense.id),
+    confirmations: confirmations
+      .filter((c) => c.expenseId === expense.id)
+      .map(({ expenseId: _ignored, ...rest }) => rest),
     items: expense.itemsJson
       ? (JSON.parse(expense.itemsJson) as Array<{
           name: string;
@@ -339,7 +387,11 @@ export function getGroupLedger(groupId: string): GroupLedger | null {
   if (!group) return null;
 
   const members = getGroupMembers(groupId);
-  const expenses = getExpenses(groupId);
+  const invited = getInvitedMembers(groupId);
+  const allExpenses = getExpenses(groupId);
+  const expenses = allExpenses.filter((e) => e.status === "confirmed");
+  const pendingExpenses = allExpenses.filter((e) => e.status === "pending");
+  const rejectedExpenses = allExpenses.filter((e) => e.status === "rejected");
   const settlements = getSettlements(groupId);
   const pools = getPools(groupId);
 
@@ -395,7 +447,10 @@ export function getGroupLedger(groupId: string): GroupLedger | null {
   return {
     group,
     members,
+    invited,
     expenses,
+    pendingExpenses,
+    rejectedExpenses,
     settlements,
     pools,
     balances,
@@ -454,16 +509,21 @@ export function createGroup(input: {
       now,
     );
     const insert = db.prepare(
-      `INSERT INTO group_members (id, group_id, user_id, role, joined_at)
-       VALUES (?, ?, ?, ?, ?)`,
+      `INSERT INTO group_members (id, group_id, user_id, role, joined_at, status, invited_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
     );
+    // The creator is in straight away. Everyone else is only invited until
+    // they accept, so nobody is put in a group (or its ledger) without a yes.
     memberIds.forEach((userId) => {
+      const isCreator = userId === input.createdBy;
       insert.run(
         `gm_${crypto.randomUUID()}`,
         id,
         userId,
-        userId === input.createdBy ? "owner" : "member",
+        isCreator ? "owner" : "member",
         now,
+        isCreator ? "active" : "invited",
+        isCreator ? null : input.createdBy,
       );
     });
   })();
@@ -486,20 +546,27 @@ export function addExpense(input: {
   itemsJson: string | null;
   notes: string | null;
   spentAt: number;
+  createdBy: string;
+  /** People who must say yes first. Empty means it goes straight to the ledger. */
+  confirmerIds: string[];
   splits: Array<{
     userId: string;
     amountBndCents: number;
     shareUnits: number | null;
     percent: number | null;
   }>;
-}): void {
+}): ExpenseStatus {
   const now = Date.now();
+  const status: ExpenseStatus = resolveExpenseStatus(
+    input.confirmerIds.map(() => "pending"),
+  );
   db.transaction(() => {
     db.prepare(
       `INSERT INTO expenses
          (id, group_id, paid_by, title, category, amount_cents, currency, fx_rate_to_bnd,
-          amount_bnd_cents, split_rule, receipt_data, items_json, notes, spent_at, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          amount_bnd_cents, split_rule, receipt_data, items_json, notes, spent_at, created_at,
+          created_by, status, resolved_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     ).run(
       input.id,
       input.groupId,
@@ -516,7 +583,17 @@ export function addExpense(input: {
       input.notes,
       input.spentAt,
       now,
+      input.createdBy,
+      status,
+      status === "confirmed" ? now : null,
     );
+    const insertConfirmation = db.prepare(
+      `INSERT INTO expense_confirmations (id, expense_id, user_id, status, responded_at)
+       VALUES (?, ?, ?, 'pending', NULL)`,
+    );
+    for (const userId of input.confirmerIds) {
+      insertConfirmation.run(`ec_${crypto.randomUUID()}`, input.id, userId);
+    }
     const insertSplit = db.prepare(
       `INSERT INTO expense_splits
          (id, expense_id, user_id, amount_bnd_cents, share_units, percent)
@@ -533,6 +610,7 @@ export function addExpense(input: {
       );
     }
   })();
+  return status;
 }
 
 export function hasPendingSettlement(input: {
