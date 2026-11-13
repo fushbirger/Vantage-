@@ -2,6 +2,10 @@
 
 **Brunei's effortless, non-custodial group expense splitter and money-pooling companion.**
 
+<div align="center">
+  <img src="assets/logo.png" width="200" alt="Vantage Logo">
+</div>
+
 Vantage keeps the shared ledger, nets out who owes whom, and routes each remaining transfer to a local payment rail (tarus, tarusQR or Pocket). It never holds, stores or moves your money — there is no wallet and no float. You settle directly from your own bank account, then confirm the ledger entry.
 
 > **Non-custodial by design.** Vantage is a smart ledger and payment-routing layer, not an e-money issuer. It does not process card payments, store balances, or act as an intermediary. See [Non-custodial model](#non-custodial-model).
