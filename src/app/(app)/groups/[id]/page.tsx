@@ -78,18 +78,15 @@ function ExpenseRow({
   const iWroteIt = expense.createdBy === currentUserId;
 
   return (
-    <details className="group card-flat overflow-hidden transition open:shadow-soft">
+    <details className="group card-flat overflow-hidden transition">
       <summary className="flex cursor-pointer list-none items-center gap-3 p-3.5 sm:p-4 [&::-webkit-details-marker]:hidden">
-        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-paper text-lg">
-          {category.emoji}
-        </span>
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-2">
             <span className="truncate text-sm font-bold sm:text-[15px]">
               {expense.title}
             </span>
             {expense.receiptData && (
-              <Receipt className="h-3.5 w-3.5 shrink-0 text-teal-600" />
+              <Receipt className="h-3.5 w-3.5 shrink-0 text-green-600" />
             )}
             {expense.status === "pending" && (
               <span
@@ -112,11 +109,13 @@ function ExpenseRow({
             <span className="opacity-40">·</span>
             <span>{formatShortDate(expense.spentAt)}</span>
             <span className="opacity-40">·</span>
+            <span>{category.label}</span>
+            <span className="opacity-40">·</span>
             <span>{SPLIT_RULE_LABELS[expense.splitRule]}</span>
           </span>
         </span>
         <span className="text-right">
-          <span className="block text-sm font-extrabold tabular-nums sm:text-base">
+          <span className="block text-sm font-bold tabular-nums sm:text-base">
             {formatBnd(expense.amountBndCents)}
           </span>
           {mySplit && (
@@ -130,14 +129,14 @@ function ExpenseRow({
 
       <div className="border-t border-line/80 bg-white/40 p-4">
         <div className="grid gap-3 sm:grid-cols-2">
-          <div className="rounded-2xl bg-paper p-3">
+          <div className="rounded-none bg-white p-3">
             <p className="stat-label">Paid by</p>
             <div className="mt-1.5 flex items-center gap-2">
               <Avatar name={expense.payerName} color={expense.payerColor} size="xs" />
               <span className="text-sm font-bold">{expense.payerName}</span>
             </div>
           </div>
-          <div className="rounded-2xl bg-paper p-3">
+          <div className="rounded-none bg-white p-3">
             <p className="stat-label">Original entry</p>
             <p className="mt-1 text-sm font-bold">
               {expense.currency === "BND"
@@ -151,7 +150,7 @@ function ExpenseRow({
         </div>
 
         <p className="stat-label mt-4">Split</p>
-        <div className="mt-1.5 divide-soft rounded-2xl border border-line bg-card">
+        <div className="mt-1.5 divide-soft rounded-none border border-line bg-white">
           {expense.splits.map((split) => (
             <div
               key={split.id}
@@ -224,7 +223,7 @@ function ExpenseRow({
         {expense.items.length > 0 && (
           <>
             <p className="stat-label mt-4">Items</p>
-            <div className="mt-1.5 divide-soft rounded-2xl border border-line bg-card">
+            <div className="mt-1.5 divide-soft rounded-none border border-line bg-white">
               {expense.items.map((item, index) => (
                 <div
                   key={`${item.name}-${index}`}
@@ -241,7 +240,7 @@ function ExpenseRow({
         )}
 
         {expense.notes && (
-          <p className="mt-3 rounded-2xl bg-amber-100/60 px-3 py-2.5 text-xs leading-relaxed text-ink/75">
+          <p className="mt-3 rounded-none bg-neutral-100/60 px-3 py-2.5 text-xs leading-relaxed text-black/75">
             {expense.notes}
           </p>
         )}
@@ -251,7 +250,7 @@ function ExpenseRow({
             href={expense.receiptData}
             target="_blank"
             rel="noreferrer"
-            className="mt-3 inline-flex items-center gap-2 text-xs font-bold text-teal-700"
+            className="mt-3 inline-flex items-center gap-2 text-xs font-bold text-green-700"
           >
             <Receipt className="h-3.5 w-3.5" /> View receipt photo
           </a>
@@ -320,25 +319,22 @@ export default async function GroupPage({
     <div className="space-y-5">
       <Link
         href="/groups"
-        className="inline-flex items-center gap-1.5 text-xs font-bold text-muted transition hover:text-teal-800"
+        className="inline-flex items-center gap-1.5 text-xs font-bold text-muted transition hover:text-green-800"
       >
         <ArrowLeft className="h-3.5 w-3.5" /> All groups
       </Link>
 
       <header className="card overflow-hidden">
-        <div className="h-1.5 w-full bg-gradient-to-r from-teal-700 via-teal-500 to-amber-400" />
+        <div className="h-1.5 w-full bg-green-700" />
         <div className="p-5 sm:p-6">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
             <div className="flex items-start gap-4">
-              <span className="grid h-16 w-16 shrink-0 place-items-center rounded-3xl bg-paper text-3xl">
-                {ledger.group.emoji}
-              </span>
               <div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+                  <h1 className=" text-2xl font-semibold">
                     {ledger.group.name}
                   </h1>
-                  <span className="pill bg-teal-50 text-teal-800">
+                  <span className="pill bg-green-50 text-green-800">
                     {KIND_LABELS[ledger.group.kind]}
                   </span>
                 </div>
@@ -391,9 +387,9 @@ export default async function GroupPage({
           <p
             className={`stat-value ${
               myBalance > 0
-                ? "text-teal-700"
+                ? "text-green-700"
                 : myBalance < 0
-                  ? "text-coral"
+                  ? "text-red-600"
                   : ""
             }`}
           >
@@ -416,7 +412,7 @@ export default async function GroupPage({
             <div className="flex items-center justify-between gap-3 border-b border-line/80 px-5 py-4">
               <div>
                 <h2 className="section-title flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-teal-700" /> Settle up
+                  <Sparkles className="h-4 w-4 text-green-700" /> Settle up
                 </h2>
                 <p className="mt-0.5 text-xs text-muted">
                   {ledger.transfers.length
@@ -440,7 +436,7 @@ export default async function GroupPage({
                   return (
                     <div
                       key={`${transfer.from}-${transfer.to}`}
-                      className={`flex items-center gap-3 px-5 py-3 ${isMine ? "bg-teal-50/40" : ""}`}
+                      className={`flex items-center gap-3 px-5 py-3 ${isMine ? "bg-green-50/40" : ""}`}
                     >
                       <Avatar
                         name={transfer.fromName}
@@ -461,7 +457,7 @@ export default async function GroupPage({
                               : "between members"}
                         </p>
                       </div>
-                      <span className="text-sm font-extrabold tabular-nums">
+                      <span className="text-sm font-bold tabular-nums">
                         {formatBnd(transfer.amountCents)}
                       </span>
                       {isMine && (
@@ -483,7 +479,7 @@ export default async function GroupPage({
               </div>
             ) : (
               <div className="flex items-center gap-3 px-5 py-6">
-                <span className="grid h-10 w-10 place-items-center rounded-full bg-teal-100 text-teal-800">
+                <span className="grid h-10 w-10 place-items-center rounded-none bg-green-100 text-green-800">
                   <CheckCircle2 className="h-5 w-5" />
                 </span>
                 <div>
@@ -496,7 +492,7 @@ export default async function GroupPage({
             )}
 
             {myTransfers.length > 0 && (
-              <div className="border-t border-line/80 bg-paper/70 px-5 py-3">
+              <div className="border-t border-line/80 bg-white px-5 py-3">
                 <p className="text-xs font-semibold text-muted">
                   For you:{" "}
                   {myTransfers
@@ -511,13 +507,13 @@ export default async function GroupPage({
             )}
 
             {pending.length > 0 && (
-              <div className="border-t border-amber-300/50 bg-amber-100/50 px-5 py-3">
-                <p className="text-xs font-semibold text-ink/75">
+              <div className="border-t border-neutral-300/50 bg-neutral-100/50 px-5 py-3">
+                <p className="text-xs font-semibold text-black/75">
                   ⏳ {pending.length} payment{pending.length === 1 ? "" : "s"} awaiting confirmation
                   {pendingForMe.length > 0 && (
                     <Link
                       href={`/groups/${ledger.group.id}/settle`}
-                      className="ml-1 font-bold text-teal-800 underline underline-offset-2"
+                      className="ml-1 font-bold text-green-800 underline underline-offset-2"
                     >
                       Confirm {pendingForMe.length === 1 ? "it" : "them"}
                     </Link>
@@ -558,7 +554,7 @@ export default async function GroupPage({
             <div className="mb-3 flex items-end justify-between gap-3">
               <div>
                 <h2 className="section-title flex items-center gap-2">
-                  <Handshake className="h-4 w-4 text-teal-700" /> Repayments
+                  <Handshake className="h-4 w-4 text-green-700" /> Repayments
                 </h2>
                 <p className="mt-0.5 text-xs text-muted">
                   Open contributions or an equal split, capped at the target
@@ -584,8 +580,7 @@ export default async function GroupPage({
               ))}
               {ledger.repayments.length === 0 && (
                 <div className="card flex flex-col items-center px-6 py-8 text-center">
-                  <span className="text-2xl">🤝</span>
-                  <p className="mt-2 text-sm font-bold">No repayments yet</p>
+                  <p className="text-sm font-bold">No repayments yet</p>
                   <p className="mt-1 max-w-xs text-xs text-muted">
                     Start one when a group needs to collect toward a single
                     amount. Anyone can chip in, or you can split it equally.
@@ -599,7 +594,7 @@ export default async function GroupPage({
             <div className="mb-3 flex items-end justify-between gap-3">
               <div>
                 <h2 className="section-title flex items-center gap-2">
-                  <Receipt className="h-4 w-4 text-teal-700" /> Expenses
+                  <Receipt className="h-4 w-4 text-green-700" /> Expenses
                 </h2>
                 <p className="mt-0.5 text-xs text-muted">
                   {ledger.expenses.length} entr
@@ -629,8 +624,7 @@ export default async function GroupPage({
               ))}
               {ledger.expenses.length === 0 && (
                 <div className="card flex flex-col items-center px-6 py-10 text-center">
-                  <span className="text-3xl">🧾</span>
-                  <p className="mt-3 text-sm font-bold">No expenses yet</p>
+                  <p className="text-sm font-bold">No expenses yet</p>
                   <p className="mt-1 max-w-xs text-xs text-muted">
                     Add the first receipt and Vantage will take care of the
                     maths.
@@ -646,7 +640,7 @@ export default async function GroupPage({
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h2 className="section-title flex items-center gap-2">
-                  <Target className="h-4 w-4 text-teal-700" /> Money pools
+                  <Target className="h-4 w-4 text-green-700" /> Money pools
                 </h2>
                 <p className="mt-0.5 text-xs text-muted">
                   Open contributions, capped at the goal — no cash held here
@@ -668,7 +662,7 @@ export default async function GroupPage({
                 return (
                   <div
                     key={pool.id}
-                    className="rounded-2xl border border-line bg-paper/60 p-4"
+                    className="rounded-none border border-line bg-white p-4"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div>
@@ -683,22 +677,22 @@ export default async function GroupPage({
                       <span
                         className={`pill ${
                           pool.fulfilled
-                            ? "bg-teal-100 text-teal-800"
-                            : "bg-amber-100 text-ink/75"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-neutral-100 text-black/75"
                         }`}
                       >
                         {pool.fulfilled ? "Fulfilled" : `${Math.round(progress)}%`}
                       </span>
                     </div>
 
-                    <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-line">
+                    <div className="mt-3 h-2.5 overflow-hidden rounded-none bg-neutral-200">
                       <div
-                        className="h-full rounded-full bg-gradient-to-r from-teal-600 to-teal-400"
+                        className="h-full rounded-none bg-green-600"
                         style={{ width: `${Math.min(100, progress)}%` }}
                       />
                     </div>
                     <div className="mt-1.5 flex items-center justify-between text-[11px] font-semibold">
-                      <span className="tabular-nums text-teal-800">
+                      <span className="tabular-nums text-green-800">
                         {formatBnd(pool.pledgedCents)} contributed
                       </span>
                       <span className="tabular-nums text-muted">
@@ -761,7 +755,7 @@ export default async function GroupPage({
                         {pool.pledges.slice(0, 4).map((pledge) => (
                           <p
                             key={pledge.id}
-                            className="flex items-center justify-between rounded-xl bg-white/60 px-2.5 py-1.5 text-[11px]"
+                            className="flex items-center justify-between rounded-none bg-white/60 px-2.5 py-1.5 text-[11px]"
                           >
                             <span className="font-semibold">
                               {pledge.userId === user.id ? "You" : pledge.userName}
@@ -771,7 +765,7 @@ export default async function GroupPage({
                                   : "· pledged"}
                               </span>
                             </span>
-                            <span className="font-bold tabular-nums text-teal-800">
+                            <span className="font-bold tabular-nums text-green-800">
                               {formatBnd(pledge.amountBndCents)}
                             </span>
                           </p>
@@ -785,7 +779,7 @@ export default async function GroupPage({
                     )}
 
                     {myContributedCents > 0 && (
-                      <p className="mt-2 rounded-xl bg-teal-50 px-2.5 py-1.5 text-[11px] font-semibold text-teal-800">
+                      <p className="mt-2 rounded-none bg-green-50 px-2.5 py-1.5 text-[11px] font-semibold text-green-800">
                         You have contributed {formatBnd(myContributedCents)} in
                         total.
                       </p>
@@ -794,9 +788,8 @@ export default async function GroupPage({
                 );
               })}
               {ledger.pools.length === 0 && (
-                <div className="rounded-2xl border border-dashed border-line px-4 py-6 text-center">
-                  <span className="text-2xl">🎯</span>
-                  <p className="mt-2 text-sm font-bold">No pools yet</p>
+                <div className="rounded-none border border-dashed border-line px-4 py-6 text-center">
+                  <p className="text-sm font-bold">No pools yet</p>
                   <p className="mt-1 text-xs text-muted">
                     Pool a gift, a photo book, or a shared deposit without
                     moving money into Vantage.
@@ -807,10 +800,10 @@ export default async function GroupPage({
           </section>
 
           <section className="card p-5">
-            <div className="flex items-start justify-between gap-3">
+            <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <h2 className="section-title flex items-center gap-2">
-                  <CalendarClock className="h-4 w-4 text-teal-700" /> Monthly
+                  <CalendarClock className="h-4 w-4 text-green-700" /> Monthly
                   bills
                 </h2>
                 <p className="mt-0.5 text-xs text-muted">
@@ -832,13 +825,13 @@ export default async function GroupPage({
               {ledger.recurringBills.map((bill) => (
                 <div
                   key={bill.id}
-                  className="flex items-center gap-2 rounded-2xl border border-line bg-paper/60 p-2.5"
+                  className="flex items-center gap-2 rounded-none border border-line bg-white p-2.5"
                 >
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-xs font-bold">
                       {bill.title}
                       {!bill.active && (
-                        <span className="ml-1.5 pill bg-paper text-muted">
+                        <span className="ml-1.5 pill bg-white text-muted">
                           Paused
                         </span>
                       )}
@@ -858,7 +851,7 @@ export default async function GroupPage({
                 </div>
               ))}
               {ledger.recurringBills.length === 0 && (
-                <p className="rounded-2xl border border-dashed border-line px-3 py-4 text-center text-[11px] text-muted">
+                <p className="rounded-none border border-dashed border-line px-3 py-4 text-center text-[11px] text-muted">
                   No scheduled bills. Rent, subscriptions and utilities can post
                   themselves each month.
                 </p>
@@ -869,7 +862,7 @@ export default async function GroupPage({
           <section className="card p-5">
             <div className="flex items-center justify-between">
               <h2 className="section-title flex items-center gap-2">
-                <UsersRound className="h-4 w-4 text-teal-700" /> Members
+                <UsersRound className="h-4 w-4 text-green-700" /> Members
               </h2>
               <span className="flex items-center gap-1 text-xs font-semibold text-muted">
                 {ledger.members.length}
@@ -914,9 +907,9 @@ export default async function GroupPage({
                     <span
                       className={`text-xs font-bold tabular-nums ${
                         balance > 0
-                          ? "text-teal-700"
+                          ? "text-green-700"
                           : balance < 0
-                            ? "text-coral"
+                            ? "text-red-600"
                             : "text-muted"
                       }`}
                     >
@@ -958,14 +951,14 @@ export default async function GroupPage({
           />
 
           {activePool && (
-            <section className="rounded-3xl border border-amber-300/50 bg-amber-100/50 p-5">
-              <p className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.14em] text-ink/60">
+            <section className="rounded-none border border-neutral-300/50 bg-neutral-100/50 p-5">
+              <p className="flex items-center gap-1.5 text-[11px] font-bold   text-black/60">
                 <TrendingUp className="h-3.5 w-3.5" /> Pool progress
               </p>
-              <p className="mt-1.5 font-display text-lg font-semibold">
+              <p className="mt-1.5  text-lg font-semibold">
                 {activePool.title}
               </p>
-              <p className="mt-1 text-xs leading-relaxed text-ink/65">
+              <p className="mt-1 text-xs leading-relaxed text-black/65">
                 {activePool.fulfilled
                   ? "Fully funded. The cash was handed over outside Vantage."
                   : `${formatBnd(activePool.remainingCents)} to go. Contributions are tracked here, then paid directly to whoever is buying the gift.`}
@@ -975,7 +968,7 @@ export default async function GroupPage({
 
           <section className="card p-5">
             <h2 className="section-title flex items-center gap-2">
-              <CalendarDays className="h-4 w-4 text-teal-700" /> Recent payments
+              <CalendarDays className="h-4 w-4 text-green-700" /> Recent payments
             </h2>
             <div className="mt-3">
               {ledger.settlements.slice(0, 5).map((settlement) => (
@@ -997,12 +990,12 @@ export default async function GroupPage({
                       {formatBnd(settlement.amountBndCents)}
                     </p>
                     <p
-                      className={`text-[10px] font-bold uppercase ${
+                      className={`text-[10px] font-bold  ${
                         settlement.status === "completed"
-                          ? "text-teal-700"
+                          ? "text-green-700"
                           : settlement.status === "pending"
-                            ? "text-amber-500"
-                            : "text-coral"
+                            ? "text-neutral-500"
+                            : "text-red-600"
                       }`}
                     >
                       {settlement.status}
@@ -1018,7 +1011,7 @@ export default async function GroupPage({
             </div>
             <Link
               href={`/groups/${ledger.group.id}/settle`}
-              className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-teal-700"
+              className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-green-700"
             >
               <MessageCircle className="h-3.5 w-3.5" /> Settle-up & payment
               routing

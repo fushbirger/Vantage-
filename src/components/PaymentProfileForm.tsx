@@ -108,7 +108,7 @@ export function PaymentProfileForm({
   return (
     <form onSubmit={submit} className="space-y-5">
       {error && (
-        <p className="rounded-2xl border border-coral/25 bg-coral/5 px-3.5 py-2.5 text-sm font-semibold text-coral">
+        <p className="rounded-none border border-red-600/40 bg-red-50 px-3.5 py-2.5 text-sm font-semibold text-red-600">
           {error}
         </p>
       )}
@@ -121,15 +121,15 @@ export function PaymentProfileForm({
               key={value}
               type="button"
               onClick={() => setRail(value)}
-              className={`rounded-2xl border p-3 text-left transition ${
+              className={`rounded-none border p-3 text-left transition ${
                 rail === value
-                  ? "border-teal-600/40 bg-teal-50 shadow-soft"
-                  : "border-line bg-white/60 hover:border-teal-300"
+                  ? "border-green-600/40 bg-green-50 "
+                  : "border-line bg-white/60 hover:border-green-300"
               }`}
               aria-pressed={rail === value}
             >
               <Icon
-                className={`h-4 w-4 ${rail === value ? "text-teal-800" : "text-muted"}`}
+                className={`h-4 w-4 ${rail === value ? "text-green-800" : "text-muted"}`}
               />
               <span className="mt-1.5 block text-sm font-bold">{label}</span>
               <span className="block text-[11px] text-muted">{description}</span>
@@ -177,12 +177,12 @@ export function PaymentProfileForm({
           a dynamic payment QR — it only shows the image you saved.
         </p>
         {qr ? (
-          <div className="flex items-center gap-3 rounded-2xl border border-line bg-white/60 p-3">
+          <div className="flex items-center gap-3 rounded-none border border-line bg-white/60 p-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={qr}
               alt="tarusQR preview"
-              className="h-20 w-20 rounded-xl bg-white object-contain p-1"
+              className="h-20 w-20 rounded-none bg-white object-contain p-1"
             />
             <div className="flex-1">
               <p className="text-sm font-bold">QR saved</p>
@@ -193,14 +193,14 @@ export function PaymentProfileForm({
             <button
               type="button"
               onClick={() => setQr(null)}
-              className="grid h-8 w-8 place-items-center rounded-full text-muted hover:bg-paper"
+              className="grid h-8 w-8 place-items-center rounded-none text-muted hover:bg-neutral-100"
               aria-label="Remove QR"
             >
               <Trash2 className="h-4 w-4" />
             </button>
           </div>
         ) : (
-          <label className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-line bg-white/40 px-4 py-4 text-sm font-semibold text-muted transition hover:border-teal-400 hover:text-teal-800">
+          <label className="flex cursor-pointer items-center justify-center gap-2 rounded-none border border-dashed border-line bg-white/40 px-4 py-4 text-sm font-semibold text-muted transition hover:border-green-400 hover:text-green-800">
             <Upload className="h-4 w-4" />
             {uploading ? "Processing…" : "Upload your static QR image"}
             <input
@@ -217,12 +217,12 @@ export function PaymentProfileForm({
         )}
       </div>
 
-      <label className="flex items-start gap-2.5 rounded-2xl border border-line bg-paper/60 p-3.5">
+      <label className="flex items-start gap-2.5 rounded-none border border-line bg-white p-3.5">
         <input
           type="checkbox"
           checked={optIn}
           onChange={(event) => setOptIn(event.target.checked)}
-          className="mt-0.5 h-4 w-4 accent-teal-700"
+          className="mt-0.5 h-4 w-4 accent-green-700"
         />
         <span>
           <span className="block text-sm font-bold">

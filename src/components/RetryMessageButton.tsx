@@ -36,7 +36,7 @@ export function RetryMessageButton({ messageId }: { messageId: string }) {
         <RefreshCw className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} />
         {loading ? "Sending…" : "Retry"}
       </button>
-      {error && <p className="text-[10px] text-coral">{error}</p>}
+      {error && <p className="text-[10px] text-red-600">{error}</p>}
     </div>
   );
 }

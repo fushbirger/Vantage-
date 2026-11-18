@@ -7,7 +7,6 @@ import { Modal } from "@/components/Modal";
 import { Avatar } from "@/components/Avatar";
 import type { Group } from "@/lib/types";
 
-const EMOJIS = ["✈️", "🚗", "🍣", "🎁", "🏠", "🏖️", "🎉", "⛽"];
 const KINDS: Array<{ value: Group["kind"]; label: string }> = [
   { value: "trip", label: "Trip" },
   { value: "dinner", label: "Dinner" },
@@ -35,7 +34,6 @@ export function CreateGroupButton({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
-  const [emoji, setEmoji] = useState("✈️");
   const [kind, setKind] = useState<Group["kind"]>("trip");
   const [description, setDescription] = useState("");
   const [memberIds, setMemberIds] = useState<Set<string>>(new Set());
@@ -61,7 +59,6 @@ export function CreateGroupButton({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name,
-          emoji,
           kind,
           description,
           memberIds: Array.from(memberIds),
@@ -104,7 +101,7 @@ export function CreateGroupButton({
       >
         <form onSubmit={submit} className="space-y-5">
           {error && (
-            <p className="rounded-2xl border border-coral/25 bg-coral/5 px-3.5 py-2.5 text-sm font-semibold text-coral">
+            <p className="rounded-none border border-red-600/40 bg-red-50 px-3.5 py-2.5 text-sm font-semibold text-red-600">
               {error}
             </p>
           )}
@@ -122,28 +119,6 @@ export function CreateGroupButton({
               required
               maxLength={80}
             />
-          </div>
-
-          <div>
-            <span className="field-label">Icon</span>
-            <div className="flex flex-wrap gap-2">
-              {EMOJIS.map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => setEmoji(option)}
-                  className={`grid h-11 w-11 place-items-center rounded-2xl border text-xl transition ${
-                    emoji === option
-                      ? "border-teal-600 bg-teal-50 shadow-soft"
-                      : "border-line bg-white hover:border-teal-300"
-                  }`}
-                  aria-label={`Use ${option}`}
-                  aria-pressed={emoji === option}
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
           </div>
 
           <div>
@@ -165,7 +140,7 @@ export function CreateGroupButton({
 
           <div>
             <label className="field-label" htmlFor="group-description">
-              Note <span className="normal-case tracking-normal">(optional)</span>
+              Note <span className="font-normal">(optional)</span>
             </label>
             <input
               id="group-description"
@@ -179,7 +154,11 @@ export function CreateGroupButton({
 
           <div>
             <span className="field-label">
-              Invite connections <span className="normal-case tracking-normal">— they join once they accept</span>
+<<<<<<< HEAD
+              Invite connections <span className="font-normal">— they join once they accept</span>
+=======
+              Members <span className="font-normal">— you are included automatically</span>
+>>>>>>> 38c3ee5 (style: flatten UI to a plain black, white, green and red theme)
             </span>
             {users.filter((person) => person.id !== currentUserId).length === 0 && (
               <p className="rounded-2xl bg-paper p-3 text-xs leading-relaxed text-muted">
@@ -198,10 +177,10 @@ export function CreateGroupButton({
                       key={person.id}
                       type="button"
                       onClick={() => toggleMember(person.id)}
-                      className={`flex w-full items-center gap-3 rounded-2xl border p-2.5 text-left transition ${
+                      className={`flex w-full items-center gap-3 rounded-none border p-2.5 text-left transition ${
                         selected
-                          ? "border-teal-600/40 bg-teal-50/70"
-                          : "border-line bg-white/60 hover:border-teal-300"
+                          ? "border-green-600/40 bg-green-50/70"
+                          : "border-line bg-white/60 hover:border-green-300"
                       }`}
                       aria-pressed={selected}
                     >
@@ -219,9 +198,9 @@ export function CreateGroupButton({
                         </span>
                       </span>
                       <span
-                        className={`grid h-5 w-5 place-items-center rounded-full border text-[10px] font-bold ${
+                        className={`grid h-5 w-5 place-items-center rounded-none border text-[10px] font-bold ${
                           selected
-                            ? "border-teal-700 bg-teal-700 text-white"
+                            ? "border-green-700 bg-green-700 text-white"
                             : "border-line bg-white text-transparent"
                         }`}
                       >

@@ -89,7 +89,7 @@ export function RepaymentCard({
 
   return (
     <>
-      <div className="rounded-2xl border border-line bg-paper/60 p-4">
+      <div className="rounded-none border border-line bg-white p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-sm font-bold">{repayment.title}</p>
@@ -107,24 +107,24 @@ export function RepaymentCard({
           <span
             className={`pill ${
               isOpen
-                ? "bg-amber-100 text-ink/75"
+                ? "bg-neutral-100 text-black/75"
                 : repayment.status === "fulfilled"
-                  ? "bg-teal-100 text-teal-800"
-                  : "bg-paper text-muted"
+                  ? "bg-green-100 text-green-800"
+                  : "bg-white text-muted"
             }`}
           >
             {repayment.status === "fulfilled" ? "Fulfilled" : repayment.status}
           </span>
         </div>
 
-        <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-line">
+        <div className="mt-3 h-2.5 overflow-hidden rounded-none bg-neutral-200">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-teal-600 to-teal-400"
+            className="h-full rounded-none bg-green-600"
             style={{ width: `${Math.min(100, progress)}%` }}
           />
         </div>
         <div className="mt-1.5 flex items-center justify-between text-[11px] font-semibold">
-          <span className="tabular-nums text-teal-800">
+          <span className="tabular-nums text-green-800">
             {formatBnd(repayment.collectedBndCents)} collected
           </span>
           <span className="tabular-nums text-muted">
@@ -140,7 +140,7 @@ export function RepaymentCard({
               : ""}
           </p>
         ) : (
-          <p className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-teal-800">
+          <p className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-green-800">
             <CheckCircle2 className="h-3.5 w-3.5" /> Target reached — no more
             contributions accepted.
           </p>
@@ -157,7 +157,7 @@ export function RepaymentCard({
             {repayment.contributions.slice(0, 5).map((contribution) => (
               <div
                 key={contribution.id}
-                className="flex items-center gap-2 rounded-xl bg-white/60 px-2.5 py-1.5"
+                className="flex items-center gap-2 rounded-none bg-white/60 px-2.5 py-1.5"
               >
                 <Avatar
                   name={contribution.userName}
@@ -177,7 +177,7 @@ export function RepaymentCard({
                     {relativeTime(contribution.createdAt)}
                   </span>
                 </span>
-                <span className="text-[11px] font-bold tabular-nums text-teal-800">
+                <span className="text-[11px] font-bold tabular-nums text-green-800">
                   {formatBnd(contribution.amountBndCents)}
                 </span>
               </div>
@@ -232,13 +232,13 @@ export function RepaymentCard({
       >
         <form onSubmit={submit} className="space-y-4">
           {error && (
-            <p className="rounded-2xl border border-coral/25 bg-coral/5 px-3.5 py-2.5 text-sm font-semibold text-coral">
+            <p className="rounded-none border border-red-600/40 bg-red-50 px-3.5 py-2.5 text-sm font-semibold text-red-600">
               {error}
             </p>
           )}
 
           {kind === "cash_handed" && (
-            <p className="rounded-2xl bg-amber-100/70 px-3.5 py-3 text-[11px] leading-relaxed text-ink/75">
+            <p className="rounded-none bg-neutral-100/70 px-3.5 py-3 text-[11px] leading-relaxed text-black/75">
               Record money you physically received. It counts toward the target
               and can never exceed the amount still needed.
             </p>
@@ -265,7 +265,7 @@ export function RepaymentCard({
 
           <div>
             <label className="field-label" htmlFor="repayment-contribution-note">
-              Note <span className="normal-case tracking-normal">(optional)</span>
+              Note <span className="font-normal">(optional)</span>
             </label>
             <input
               id="repayment-contribution-note"

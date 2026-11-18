@@ -171,11 +171,11 @@ export function SettleDebtCard({
     <>
       <div
         className={`card flex flex-col gap-3 p-4 sm:flex-row sm:items-center ${
-          isDebtor || isCreditor ? "border-teal-600/20 bg-teal-50/20" : ""
+          isDebtor || isCreditor ? "border-green-600/20 bg-green-50/20" : ""
         }`}
       >
         <div className="flex min-w-0 flex-1 items-center gap-3">
-          <div className="relative flex shrink-0 -space-x-2">
+          <div className="flex shrink-0 space-x-1">
             <Avatar name={debt.fromName} color={debt.fromColor} size="md" ring />
             <Avatar name={debt.toName} color={debt.toColor} size="md" ring />
           </div>
@@ -198,12 +198,12 @@ export function SettleDebtCard({
           </div>
         </div>
         <div className="flex items-center justify-between gap-3 sm:justify-end">
-          <span className="text-lg font-extrabold tabular-nums">
+          <span className="text-lg font-bold tabular-nums">
             {formatBnd(debt.amountCents)}
           </span>
           {isDebtor ? (
             pendingClaim ? (
-              <span className="chip bg-amber-100 text-ink/75">
+              <span className="chip bg-neutral-100 text-black/75">
                 <Clock3 className="h-3.5 w-3.5" /> Awaiting confirm
               </span>
             ) : (
@@ -263,14 +263,14 @@ export function SettleDebtCard({
         icon={<Smartphone className="h-5 w-5" />}
       >
         <div className="space-y-5">
-          <div className="rounded-3xl bg-teal-800 p-5 text-white">
-            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/60">
+          <div className="border border-black bg-white p-5">
+            <p className="text-xs font-medium text-muted">
               {mode === "received" ? "Amount to receive" : "Amount to pay"}
             </p>
-            <p className="mt-1 font-display text-4xl font-semibold tabular-nums">
+            <p className="mt-1 text-2xl font-semibold tabular-nums text-black">
               {formatBnd(debt.amountCents)}
             </p>
-            <p className="mt-1 text-xs text-white/70">
+            <p className="mt-1 text-xs text-muted">
               {mode === "received"
                 ? `from ${debt.fromName}`
                 : `to ${debt.toName} · ${creditor.phone ?? "phone not shared"}`}
@@ -278,7 +278,7 @@ export function SettleDebtCard({
           </div>
 
           {mode === "pay" && (
-            <div className="rounded-3xl border border-line bg-white/70 p-4">
+            <div className="rounded-none border border-line bg-white/70 p-4">
               <div className="flex items-center gap-3">
                 <Avatar
                   name={creditor.name}
@@ -288,22 +288,22 @@ export function SettleDebtCard({
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-bold">{creditor.name}</p>
                   <p className="text-xs text-muted">@{creditor.username}</p>
-                  <p className="mt-0.5 text-xs font-semibold text-teal-800">
+                  <p className="mt-0.5 text-xs font-semibold text-green-800">
                     {creditorProfile
                       ? RAIL_LABELS[creditorProfile.preferredRail]
                       : "No payment rail saved"}
                   </p>
                 </div>
-                <QrCode className="h-5 w-5 text-teal-700" />
+                <QrCode className="h-5 w-5 text-green-700" />
               </div>
 
               {creditorProfile?.tarusQrData && (
-                <div className="mt-4 flex flex-col items-center rounded-2xl bg-paper p-3">
+                <div className="mt-4 flex flex-col items-center rounded-none bg-white p-3">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={creditorProfile.tarusQrData}
                     alt={`${creditor.name}'s tarusQR`}
-                    className="h-44 w-44 rounded-xl bg-white object-contain p-2"
+                    className="h-44 w-44 rounded-none bg-white object-contain p-2"
                   />
                   <p className="mt-2 text-[11px] font-semibold text-muted">
                     This is {creditor.name}’s saved static QR image. Scan it in
@@ -314,8 +314,8 @@ export function SettleDebtCard({
 
               <div className="mt-3 space-y-2">
                 {creditorProfile?.tarusProxy && (
-                  <div className="flex items-center justify-between gap-3 rounded-2xl bg-paper px-3 py-2.5">
-                    <span className="text-xs font-bold uppercase tracking-wide text-muted">
+                  <div className="flex items-center justify-between gap-3 rounded-none bg-white px-3 py-2.5">
+                    <span className="text-xs font-bold   text-muted">
                       tarus proxy
                     </span>
                     <span className="text-sm font-bold tabular-nums">
@@ -324,15 +324,15 @@ export function SettleDebtCard({
                   </div>
                 )}
                 {creditorProfile?.pocketLink && (
-                  <div className="flex items-center justify-between gap-3 rounded-2xl bg-paper px-3 py-2.5">
-                    <span className="text-xs font-bold uppercase tracking-wide text-muted">
+                  <div className="flex items-center justify-between gap-3 rounded-none bg-white px-3 py-2.5">
+                    <span className="text-xs font-bold   text-muted">
                       Pocket
                     </span>
                     <a
                       href={creditorProfile.pocketLink}
                       target="_blank"
                       rel="noreferrer"
-                      className="max-w-[55%] truncate text-sm font-bold text-teal-700 underline underline-offset-2"
+                      className="max-w-[55%] truncate text-sm font-bold text-green-700 underline underline-offset-2"
                     >
                       {creditorProfile.pocketLink}
                     </a>
@@ -341,7 +341,7 @@ export function SettleDebtCard({
                 {!creditorProfile?.tarusProxy &&
                   !creditorProfile?.pocketLink &&
                   !creditorProfile?.tarusQrData && (
-                    <p className="rounded-2xl bg-amber-100/70 px-3 py-2.5 text-xs leading-relaxed text-ink/75">
+                    <p className="rounded-none bg-neutral-100/70 px-3 py-2.5 text-xs leading-relaxed text-black/75">
                       {creditor.name} has not saved a tarus proxy, tarusQR or
                       Pocket link yet. Ask them to add one in Account, or settle
                       in cash.
@@ -372,7 +372,7 @@ export function SettleDebtCard({
                 className="btn-secondary mt-3 w-full text-xs"
               >
                 {copied ? (
-                  <Check className="h-3.5 w-3.5 text-teal-700" />
+                  <Check className="h-3.5 w-3.5 text-green-700" />
                 ) : (
                   <Copy className="h-3.5 w-3.5" />
                 )}
@@ -382,8 +382,8 @@ export function SettleDebtCard({
           )}
 
           {mode === "received" && (
-            <div className="rounded-3xl border border-line bg-white/70 p-4">
-              <p className="text-xs font-bold uppercase tracking-[0.14em] text-muted">
+            <div className="rounded-none border border-line bg-white/70 p-4">
+              <p className="text-xs font-bold   text-muted">
                 Reminder to send
               </p>
               <a
@@ -400,7 +400,7 @@ export function SettleDebtCard({
 
           <form onSubmit={submit} className="space-y-4">
             {error && (
-              <p className="rounded-2xl border border-coral/25 bg-coral/5 px-3.5 py-2.5 text-sm font-semibold text-coral">
+              <p className="rounded-none border border-red-600/40 bg-red-50 px-3.5 py-2.5 text-sm font-semibold text-red-600">
                 {error}
               </p>
             )}
@@ -434,7 +434,7 @@ export function SettleDebtCard({
 
             <div>
               <label className="field-label" htmlFor="settle-note">
-                Note <span className="normal-case tracking-normal">(optional)</span>
+                Note <span className="font-normal">(optional)</span>
               </label>
               <input
                 id="settle-note"
@@ -447,15 +447,15 @@ export function SettleDebtCard({
 
             <div>
               <span className="field-label">
-                Payment screenshot <span className="normal-case tracking-normal">(optional)</span>
+                Payment screenshot <span className="font-normal">(optional)</span>
               </span>
               {proof ? (
-                <div className="flex items-center gap-3 rounded-2xl border border-line bg-white/60 p-2.5">
+                <div className="flex items-center gap-3 rounded-none border border-line bg-white/60 p-2.5">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={proof}
                     alt="Payment proof preview"
-                    className="h-14 w-14 rounded-xl object-cover"
+                    className="h-14 w-14 rounded-none object-cover"
                   />
                   <span className="flex-1 text-sm font-bold">
                     Screenshot attached
@@ -463,14 +463,14 @@ export function SettleDebtCard({
                   <button
                     type="button"
                     onClick={() => setProof(null)}
-                    className="grid h-8 w-8 place-items-center rounded-full text-muted hover:bg-paper"
+                    className="grid h-8 w-8 place-items-center rounded-none text-muted hover:bg-neutral-100"
                     aria-label="Remove screenshot"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
               ) : (
-                <label className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-line bg-white/40 px-4 py-4 text-sm font-semibold text-muted transition hover:border-teal-400 hover:text-teal-800">
+                <label className="flex cursor-pointer items-center justify-center gap-2 rounded-none border border-dashed border-line bg-white/40 px-4 py-4 text-sm font-semibold text-muted transition hover:border-green-400 hover:text-green-800">
                   <Camera className="h-4 w-4" />
                   {uploading ? "Processing…" : "Attach payment screenshot"}
                   <input
@@ -487,7 +487,7 @@ export function SettleDebtCard({
               )}
             </div>
 
-            <div className="rounded-2xl bg-amber-100/60 px-3.5 py-3 text-[11px] leading-relaxed text-ink/75">
+            <div className="rounded-none bg-neutral-100/60 px-3.5 py-3 text-[11px] leading-relaxed text-black/75">
               <ShieldCheck className="mr-1 inline h-3.5 w-3.5" />
               This is a claim, not a transfer. Vantage does not touch the money.
               {mode === "pay"

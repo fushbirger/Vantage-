@@ -82,18 +82,18 @@ export default async function SettlePage({
     <div className="space-y-5">
       <Link
         href={`/groups/${ledger.group.id}`}
-        className="inline-flex items-center gap-1.5 text-xs font-bold text-muted transition hover:text-teal-800"
+        className="inline-flex items-center gap-1.5 text-xs font-bold text-muted transition hover:text-green-800"
       >
         <ArrowLeft className="h-3.5 w-3.5" /> {ledger.group.name}
       </Link>
 
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-teal-700">
-            {ledger.group.emoji} {ledger.group.name}
+          <p className="text-[11px] font-bold   text-green-700">
+            {ledger.group.name}
           </p>
-          <h1 className="mt-1 flex items-center gap-2 font-display text-4xl font-semibold tracking-tight sm:text-5xl">
-            <Handshake className="h-8 w-8 text-teal-700" /> Settle up
+          <h1 className="mt-1 flex items-center gap-2  text-2xl font-semibold">
+            <Handshake className="h-8 w-8 text-green-700" /> Settle up
           </h1>
           <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted">
             Vantage nets each pair directly: what you owe someone minus what they
@@ -117,7 +117,7 @@ export default async function SettlePage({
           <p className="stat-label">Your position</p>
           <p
             className={`stat-value ${
-              myBalance > 0 ? "text-teal-700" : myBalance < 0 ? "text-coral" : ""
+              myBalance > 0 ? "text-green-700" : myBalance < 0 ? "text-red-600" : ""
             }`}
           >
             {myBalance === 0 ? "Square" : formatPosition(myBalance)}
@@ -135,7 +135,7 @@ export default async function SettlePage({
             <section>
               <div className="mb-3">
                 <h2 className="section-title flex items-center gap-2">
-                  <Clock3 className="h-4 w-4 text-amber-500" /> Awaiting
+                  <Clock3 className="h-4 w-4 text-neutral-500" /> Awaiting
                   confirmation
                 </h2>
                 <p className="mt-0.5 text-xs text-muted">
@@ -159,7 +159,7 @@ export default async function SettlePage({
             <div className="mb-3 flex items-end justify-between gap-3">
               <div>
                 <h2 className="section-title flex items-center gap-2">
-                  <Scale className="h-4 w-4 text-teal-700" /> Direct transfers
+                  <Scale className="h-4 w-4 text-green-700" /> Direct transfers
                 </h2>
                 <p className="mt-0.5 text-xs text-muted">
                   Pairwise owed − paid · one net transfer per pair
@@ -231,10 +231,10 @@ export default async function SettlePage({
 
               {ledger.transfers.length === 0 && (
                 <div className="card flex flex-col items-center px-6 py-12 text-center">
-                  <span className="grid h-14 w-14 place-items-center rounded-full bg-teal-100 text-teal-800">
+                  <span className="grid h-14 w-14 place-items-center rounded-none bg-green-100 text-green-800">
                     <CheckCircle2 className="h-7 w-7" />
                   </span>
-                  <h3 className="mt-4 font-display text-2xl font-semibold">
+                  <h3 className="mt-4  text-2xl font-semibold">
                     Everyone is square
                   </h3>
                   <p className="mt-1.5 max-w-sm text-sm leading-relaxed text-muted">
@@ -248,7 +248,7 @@ export default async function SettlePage({
 
           <section className="card p-5">
             <h2 className="section-title flex items-center gap-2">
-              <CircleDollarSign className="h-4 w-4 text-teal-700" /> Payment
+              <CircleDollarSign className="h-4 w-4 text-green-700" /> Payment
               history
             </h2>
             <div className="mt-3 divide-soft">
@@ -269,8 +269,8 @@ export default async function SettlePage({
                     <span
                       className={`pill ${
                         settlement.status === "completed"
-                          ? "bg-teal-100 text-teal-800"
-                          : "bg-coral/10 text-coral"
+                          ? "bg-green-100 text-green-800"
+                          : "bg-red-50 text-red-600"
                       }`}
                     >
                       {settlement.status === "completed" ? "Completed" : "Rejected"}
@@ -286,7 +286,7 @@ export default async function SettlePage({
                       href={settlement.proofData}
                       target="_blank"
                       rel="noreferrer"
-                      className="ml-9 text-[11px] font-bold text-teal-700"
+                      className="ml-9 text-[11px] font-bold text-green-700"
                     >
                       View proof
                     </a>
@@ -306,7 +306,7 @@ export default async function SettlePage({
         <div className="min-w-0 space-y-5">
           <section className="card p-5">
             <h2 className="section-title flex items-center gap-2">
-              <Smartphone className="h-4 w-4 text-teal-700" /> Local rails
+              <Smartphone className="h-4 w-4 text-green-700" /> Local rails
             </h2>
             <p className="mt-1 text-xs leading-relaxed text-muted">
               Each member can save a tarus proxy, a tarusQR image, or a Pocket
@@ -318,7 +318,7 @@ export default async function SettlePage({
                 return (
                   <div
                     key={member.userId}
-                    className="flex items-center gap-2.5 rounded-2xl border border-line bg-paper/60 p-2.5"
+                    className="flex items-center gap-2.5 rounded-none border border-line bg-white p-2.5"
                   >
                     <Avatar
                       name={member.name}
@@ -335,7 +335,7 @@ export default async function SettlePage({
                       </p>
                     </div>
                     {profile?.tarusQrData && (
-                      <span className="pill bg-teal-50 text-teal-800">QR</span>
+                      <span className="pill bg-green-50 text-green-800">QR</span>
                     )}
                   </div>
                 );
@@ -343,7 +343,7 @@ export default async function SettlePage({
             </div>
             <Link
               href="/account"
-              className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-teal-700"
+              className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-green-700"
             >
               Manage my payment details
             </Link>
@@ -351,7 +351,7 @@ export default async function SettlePage({
 
           <section className="card p-5">
             <h2 className="section-title flex items-center gap-2">
-              <Info className="h-4 w-4 text-teal-700" /> How this works
+              <Info className="h-4 w-4 text-green-700" /> How this works
             </h2>
             <ol className="mt-3 space-y-3">
               {[
@@ -361,7 +361,7 @@ export default async function SettlePage({
                 "The recipient confirms manually — AI can hint, but never decides.",
               ].map((step, index) => (
                 <li key={step} className="flex gap-2.5">
-                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-teal-100 text-[11px] font-extrabold text-teal-800">
+                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-none bg-green-100 text-[11px] font-bold text-green-800">
                     {index + 1}
                   </span>
                   <span className="text-xs leading-relaxed text-muted">
@@ -370,7 +370,7 @@ export default async function SettlePage({
                 </li>
               ))}
             </ol>
-            <div className="mt-4 rounded-2xl bg-amber-100/60 px-3.5 py-3 text-[11px] leading-relaxed text-ink/75">
+            <div className="mt-4 rounded-none bg-neutral-100/60 px-3.5 py-3 text-[11px] leading-relaxed text-black/75">
               <ShieldCheck className="mr-1 inline h-3.5 w-3.5" />
               Vantage holds BND 0.00. It is a ledger and routing layer, not an
               e-wallet.
@@ -396,9 +396,9 @@ export default async function SettlePage({
                   <span
                     className={`text-xs font-bold tabular-nums ${
                       balance.amountCents > 0
-                        ? "text-teal-700"
+                        ? "text-green-700"
                         : balance.amountCents < 0
-                          ? "text-coral"
+                          ? "text-red-600"
                           : "text-muted"
                     }`}
                   >
@@ -415,7 +415,7 @@ export default async function SettlePage({
             </p>
           </section>
 
-          <section className="rounded-3xl border border-line bg-card p-5">
+          <section className="rounded-none border border-line bg-white p-5">
             <h2 className="section-title">Last activity</h2>
             <p className="mt-1 text-xs text-muted">
               {ledger.expenses.length} expenses · {ledger.settlements.length}{" "}

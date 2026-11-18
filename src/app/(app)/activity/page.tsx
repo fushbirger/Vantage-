@@ -24,10 +24,10 @@ import { TEMPLATE_LABELS, type WhatsAppTemplate } from "@/lib/wa";
 export const metadata = { title: "Activity" };
 
 const STATUS_STYLE: Record<string, string> = {
-  sent: "bg-teal-100 text-teal-800",
-  simulated: "bg-amber-100 text-ink/75",
-  queued: "bg-paper text-muted",
-  failed: "bg-coral/10 text-coral",
+  sent: "bg-green-100 text-green-800",
+  simulated: "bg-neutral-100 text-black/75",
+  queued: "bg-white text-muted",
+  failed: "bg-red-50 text-red-600",
 };
 
 export default async function ActivityPage() {
@@ -49,10 +49,10 @@ export default async function ActivityPage() {
   return (
     <div className="space-y-5">
       <header>
-        <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-teal-700">
+        <p className="text-[11px] font-bold   text-green-700">
           Notifications
         </p>
-        <h1 className="mt-1 font-display text-4xl font-semibold tracking-tight sm:text-5xl">
+        <h1 className="mt-1  text-2xl font-semibold">
           Activity
         </h1>
         <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted">
@@ -76,7 +76,7 @@ export default async function ActivityPage() {
         </div>
         <div className="stat">
           <p className="stat-label">Failed sends</p>
-          <p className={`stat-value ${failed ? "text-coral" : ""}`}>{failed}</p>
+          <p className={`stat-value ${failed ? "text-red-600" : ""}`}>{failed}</p>
         </div>
       </section>
 
@@ -117,7 +117,7 @@ export default async function ActivityPage() {
           {awaitingMe.length > 0 && (
             <section className="card p-5">
               <h2 className="section-title flex items-center gap-2">
-                <BellRing className="h-4 w-4 text-amber-500" /> Confirm payments
+                <BellRing className="h-4 w-4 text-neutral-500" /> Confirm payments
               </h2>
               <p className="mt-1 text-xs text-muted">
                 These members say they paid you. Check your banking app, then
@@ -127,7 +127,7 @@ export default async function ActivityPage() {
                 {awaitingMe.map((settlement) => (
                   <div
                     key={settlement.id}
-                    className="flex items-center gap-3 rounded-2xl border border-amber-300/60 bg-amber-100/40 p-3"
+                    className="flex items-center gap-3 rounded-none border border-neutral-300/60 bg-neutral-100/40 p-3"
                   >
                     <Avatar
                       name={settlement.fromName}
@@ -160,7 +160,7 @@ export default async function ActivityPage() {
             <div className="mb-3 flex items-end justify-between">
               <div>
                 <h2 className="section-title flex items-center gap-2">
-                  <Inbox className="h-4 w-4 text-teal-700" /> WhatsApp outbox
+                  <Inbox className="h-4 w-4 text-green-700" /> WhatsApp outbox
                 </h2>
                 <p className="mt-0.5 text-xs text-muted">
                   Service layer output, newest first
@@ -174,7 +174,7 @@ export default async function ActivityPage() {
                 <article key={message.id} className="card p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-2">
-                      <span className="grid h-8 w-8 place-items-center rounded-full bg-teal-100 text-teal-800">
+                      <span className="grid h-8 w-8 place-items-center rounded-none bg-green-100 text-green-800">
                         <MessageCircle className="h-4 w-4" />
                       </span>
                       <div>
@@ -191,19 +191,19 @@ export default async function ActivityPage() {
                     </div>
                     <span
                       className={`pill ${
-                        STATUS_STYLE[message.status] ?? "bg-paper text-muted"
+                        STATUS_STYLE[message.status] ?? "bg-white text-muted"
                       }`}
                     >
                       {message.status}
                     </span>
                   </div>
 
-                  <p className="mt-3 whitespace-pre-wrap rounded-2xl bg-paper/80 px-3.5 py-3 text-xs leading-relaxed text-ink/80">
+                  <p className="mt-3 whitespace-pre-wrap rounded-none bg-white px-3.5 py-3 text-xs leading-relaxed text-black/80">
                     {message.body}
                   </p>
 
                   <div className="mt-2 flex items-center justify-between gap-2">
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-muted">
+                    <p className="text-[10px] font-semibold   text-muted">
                       to {message.phone ?? "no phone"} ·{" "}
                       {message.userName ?? "member"}
                     </p>
@@ -213,7 +213,7 @@ export default async function ActivityPage() {
                     )}
                   </div>
                   {message.error && (
-                    <p className="mt-1.5 rounded-xl bg-coral/5 px-2.5 py-1.5 text-[10px] text-coral">
+                    <p className="mt-1.5 rounded-none bg-red-50 px-2.5 py-1.5 text-[10px] text-red-600">
                       {message.error}
                     </p>
                   )}
@@ -221,8 +221,7 @@ export default async function ActivityPage() {
               ))}
               {messages.length === 0 && (
                 <div className="card flex flex-col items-center px-6 py-12 text-center">
-                  <span className="text-3xl">🔔</span>
-                  <p className="mt-3 text-sm font-bold">Nothing yet</p>
+                  <p className="text-sm font-bold">Nothing yet</p>
                   <p className="mt-1 max-w-xs text-xs text-muted">
                     Add an expense or start a pool and the notification service
                     will queue a message here.
@@ -237,32 +236,32 @@ export default async function ActivityPage() {
           <section className="card p-5">
             <h2 className="section-title flex items-center gap-2">
               {integration.configured ? (
-                <CheckCircle2 className="h-4 w-4 text-teal-700" />
+                <CheckCircle2 className="h-4 w-4 text-green-700" />
               ) : (
-                <FlaskConical className="h-4 w-4 text-amber-500" />
+                <FlaskConical className="h-4 w-4 text-neutral-500" />
               )}
               Integration
             </h2>
             <div className="mt-3 space-y-2">
-              <div className="flex items-center justify-between rounded-2xl bg-paper px-3 py-2.5">
+              <div className="flex items-center justify-between rounded-none bg-white px-3 py-2.5">
                 <span className="text-xs font-semibold text-muted">Mode</span>
                 <span
                   className={`pill ${
                     integration.configured
-                      ? "bg-teal-100 text-teal-800"
-                      : "bg-amber-100 text-ink/75"
+                      ? "bg-green-100 text-green-800"
+                      : "bg-neutral-100 text-black/75"
                   }`}
                 >
                   {integration.configured ? "Live Cloud API" : "Simulated"}
                 </span>
               </div>
-              <div className="flex items-center justify-between rounded-2xl bg-paper px-3 py-2.5">
+              <div className="flex items-center justify-between rounded-none bg-white px-3 py-2.5">
                 <span className="text-xs font-semibold text-muted">Webhook</span>
                 <span className="text-xs font-bold">
                   {integration.verifyTokenSet ? "Ready" : "Token missing"}
                 </span>
               </div>
-              <div className="flex items-center justify-between rounded-2xl bg-paper px-3 py-2.5">
+              <div className="flex items-center justify-between rounded-none bg-white px-3 py-2.5">
                 <span className="text-xs font-semibold text-muted">
                   API version
                 </span>
@@ -278,16 +277,16 @@ export default async function ActivityPage() {
 
           <section className="card p-5">
             <h2 className="section-title flex items-center gap-2">
-              <Webhook className="h-4 w-4 text-teal-700" /> Webhook endpoints
+              <Webhook className="h-4 w-4 text-green-700" /> Webhook endpoints
             </h2>
             <div className="mt-3 space-y-2 text-[11px]">
-              <p className="rounded-xl bg-paper px-3 py-2 font-mono">
+              <p className="rounded-none bg-white px-3 py-2 font-mono">
                 GET /api/whatsapp/webhook
               </p>
-              <p className="rounded-xl bg-paper px-3 py-2 font-mono">
+              <p className="rounded-none bg-white px-3 py-2 font-mono">
                 POST /api/whatsapp/webhook
               </p>
-              <p className="rounded-xl bg-paper px-3 py-2 font-mono">
+              <p className="rounded-none bg-white px-3 py-2 font-mono">
                 POST /api/whatsapp/outbox/:id/retry
               </p>
             </div>
@@ -300,14 +299,14 @@ export default async function ActivityPage() {
           {awaitingThem.length > 0 && (
             <section className="card p-5">
               <h2 className="section-title flex items-center gap-2">
-                <TriangleAlert className="h-4 w-4 text-amber-500" /> Waiting for
+                <TriangleAlert className="h-4 w-4 text-neutral-500" /> Waiting for
                 them
               </h2>
               <div className="mt-3 space-y-2">
                 {awaitingThem.map((settlement) => (
                   <div
                     key={settlement.id}
-                    className="rounded-2xl bg-paper px-3 py-2.5"
+                    className="rounded-none bg-white px-3 py-2.5"
                   >
                     <p className="text-xs font-bold">
                       {formatBnd(settlement.amountBndCents)} to{" "}
@@ -323,11 +322,11 @@ export default async function ActivityPage() {
             </section>
           )}
 
-          <section className="rounded-3xl border border-amber-300/50 bg-amber-100/50 p-5">
-            <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-ink/60">
+          <section className="rounded-none border border-neutral-300/50 bg-neutral-100/50 p-5">
+            <p className="text-[11px] font-bold   text-black/60">
               Zero-friction sharing
             </p>
-            <p className="mt-1.5 text-sm leading-relaxed text-ink/75">
+            <p className="mt-1.5 text-sm leading-relaxed text-black/75">
               Every group has a “Share to WhatsApp” button that formats the
               expense summary and a deep link to the settle-up page. Paste it
               straight into the group chat.

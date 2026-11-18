@@ -372,7 +372,7 @@ export function AddExpenseButton({
       >
         <form onSubmit={submit} className="space-y-5">
           {error && (
-            <p className="rounded-2xl border border-coral/25 bg-coral/5 px-3.5 py-2.5 text-sm font-semibold text-coral">
+            <p className="rounded-none border border-red-600/40 bg-red-50 px-3.5 py-2.5 text-sm font-semibold text-red-600">
               {error}
             </p>
           )}
@@ -442,10 +442,10 @@ export function AddExpenseButton({
             </div>
           </div>
 
-          <div className="rounded-2xl border border-line bg-white/60 p-3.5">
+          <div className="rounded-none border border-line bg-white/60 p-3.5">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.12em] text-muted">
+                <p className="text-xs font-bold   text-muted">
                   FX to BND
                 </p>
                 <p className="mt-0.5 text-sm font-semibold">
@@ -463,7 +463,7 @@ export function AddExpenseButton({
             </div>
             <p className="mt-2 text-xs text-muted">
               {CURRENCIES[currency].note}. Ledger total:{" "}
-              <strong className="text-ink">{formatBnd(amountBndCents)}</strong>
+              <strong className="text-black">{formatBnd(amountBndCents)}</strong>
             </p>
           </div>
 
@@ -498,7 +498,7 @@ export function AddExpenseButton({
               >
                 {CATEGORIES.map((code: string) => (
                   <option key={code} value={code}>
-                    {CATEGORY_META[code].emoji} {CATEGORY_META[code].label}
+                    {CATEGORY_META[code].label}
                   </option>
                 ))}
               </select>
@@ -512,22 +512,22 @@ export function AddExpenseButton({
                 <button
                   type="button"
                   onClick={distributeEvenly}
-                  className="text-xs font-bold text-teal-700 hover:text-teal-900"
+                  className="text-xs font-bold text-green-700 hover:text-green-900"
                 >
                   Fill evenly
                 </button>
               )}
             </div>
-            <div className="mt-2 grid grid-cols-4 gap-1.5 rounded-2xl border border-line bg-paper p-1">
+            <div className="mt-2 grid grid-cols-4 gap-1.5 rounded-none border border-line bg-white p-1">
               {RULES.map((option) => (
                 <button
                   key={option.value}
                   type="button"
                   onClick={() => setRule(option.value)}
-                  className={`rounded-xl px-1 py-2 text-xs font-bold transition ${
+                  className={`rounded-none px-1 py-2 text-xs font-bold transition ${
                     rule === option.value
-                      ? "bg-white text-teal-800 shadow-soft"
-                      : "text-muted hover:text-ink"
+                      ? "bg-black text-white"
+                      : "text-black hover:bg-neutral-100"
                   }`}
                   aria-pressed={rule === option.value}
                 >
@@ -553,9 +553,9 @@ export function AddExpenseButton({
                 return (
                   <div
                     key={member.userId}
-                    className={`rounded-2xl border p-2.5 transition ${
+                    className={`rounded-none border p-2.5 transition ${
                       isSelected
-                        ? "border-teal-600/30 bg-teal-50/40"
+                        ? "border-green-600/30 bg-green-50/40"
                         : "border-line bg-white/50"
                     }`}
                   >
@@ -563,9 +563,9 @@ export function AddExpenseButton({
                       <button
                         type="button"
                         onClick={() => toggleMember(member.userId)}
-                        className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border text-[10px] font-bold transition ${
+                        className={`grid h-5 w-5 shrink-0 place-items-center rounded-none border text-[10px] font-bold transition ${
                           isSelected
-                            ? "border-teal-700 bg-teal-700 text-white"
+                            ? "border-green-700 bg-green-700 text-white"
                             : "border-line bg-white text-transparent"
                         }`}
                         aria-pressed={isSelected}
@@ -613,7 +613,7 @@ export function AddExpenseButton({
                         </div>
                       )}
                       {isSelected && preview && (
-                        <span className="w-20 text-right text-xs font-bold tabular-nums text-teal-800">
+                        <span className="w-20 text-right text-xs font-bold tabular-nums text-green-800">
                           {formatBnd(preview.map.get(member.userId) ?? 0)}
                         </span>
                       )}
@@ -623,20 +623,20 @@ export function AddExpenseButton({
               })}
             </div>
             {rule !== "equal" && !preview && (
-              <p className="mt-2 text-xs font-semibold text-coral">
+              <p className="mt-2 text-xs font-semibold text-red-600">
                 Check the split values — they don’t balance yet.
               </p>
             )}
           </div>
 
-          <div className="rounded-2xl border border-line bg-white/50">
+          <div className="rounded-none border border-line bg-white/50">
             <button
               type="button"
               onClick={() => setShowItems((value) => !value)}
               className="flex w-full items-center justify-between px-3.5 py-3 text-sm font-bold"
             >
               <span className="inline-flex items-center gap-2">
-                <Receipt className="h-4 w-4 text-teal-700" />
+                <Receipt className="h-4 w-4 text-green-700" />
                 Itemise the receipt
                 {items.length > 0 && (
                   <span className="chip chip-active">{items.length}</span>
@@ -686,7 +686,7 @@ export function AddExpenseButton({
                           previous.filter((row) => row.id !== item.id),
                         )
                       }
-                      className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-muted hover:bg-coral/10 hover:text-coral"
+                      className="grid h-10 w-10 shrink-0 place-items-center rounded-none text-muted hover:bg-red-50 hover:text-red-600"
                       aria-label="Remove item"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -714,7 +714,7 @@ export function AddExpenseButton({
                     <span
                       className={`text-xs font-semibold ${
                         itemsTotal === amountCents
-                          ? "text-teal-700"
+                          ? "text-green-700"
                           : "text-muted"
                       }`}
                     >
@@ -734,12 +734,12 @@ export function AddExpenseButton({
           <div>
             <span className="field-label">Receipt photo</span>
             {receipt ? (
-              <div className="flex items-center gap-3 rounded-2xl border border-line bg-white/60 p-2.5">
+              <div className="flex items-center gap-3 rounded-none border border-line bg-white/60 p-2.5">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={receipt}
                   alt="Receipt preview"
-                  className="h-14 w-14 rounded-xl object-cover"
+                  className="h-14 w-14 rounded-none object-cover"
                 />
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-bold">Receipt attached</p>
@@ -752,14 +752,14 @@ export function AddExpenseButton({
                     setScanNote("");
                     setAiFilled(false);
                   }}
-                  className="grid h-8 w-8 place-items-center rounded-full text-muted hover:bg-paper"
+                  className="grid h-8 w-8 place-items-center rounded-none text-muted hover:bg-neutral-100"
                   aria-label="Remove receipt"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
               </div>
             ) : (
-              <label className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-line bg-white/40 px-4 py-4 text-sm font-semibold text-muted transition hover:border-teal-400 hover:text-teal-800">
+              <label className="flex cursor-pointer items-center justify-center gap-2 rounded-none border border-dashed border-line bg-white/40 px-4 py-4 text-sm font-semibold text-muted transition hover:border-green-400 hover:text-green-800">
                 <Camera className="h-4 w-4" />
                 {uploading ? "Processing…" : "Take or upload a receipt"}
                 <input
@@ -778,10 +778,10 @@ export function AddExpenseButton({
 
             {(scanning || scanNote) && (
               <div
-                className={`mt-2 flex items-start gap-2 rounded-2xl px-3 py-2.5 text-[11px] leading-relaxed ${
+                className={`mt-2 flex items-start gap-2 rounded-none px-3 py-2.5 text-[11px] leading-relaxed ${
                   aiFilled
-                    ? "bg-teal-50 text-teal-900"
-                    : "bg-amber-100/60 text-ink/75"
+                    ? "bg-green-50 text-green-900"
+                    : "bg-neutral-100/60 text-black/75"
                 }`}
               >
                 {scanning ? (
@@ -798,7 +798,7 @@ export function AddExpenseButton({
 
           <div>
             <label className="field-label" htmlFor="exp-notes">
-              Note <span className="normal-case tracking-normal">(optional)</span>
+              Note <span className="font-normal">(optional)</span>
             </label>
             <textarea
               id="exp-notes"
@@ -810,14 +810,14 @@ export function AddExpenseButton({
             />
           </div>
 
-          <div className="rounded-2xl bg-teal-50/70 px-3.5 py-3">
-            <p className="flex items-center gap-1.5 text-xs font-bold text-teal-800">
+          <div className="rounded-none bg-green-50/70 px-3.5 py-3">
+            <p className="flex items-center gap-1.5 text-xs font-bold text-green-800">
               <Sparkles className="h-3.5 w-3.5" />
               {preview
                 ? `${formatBnd(preview.total)} split across ${participants.length} ${participants.length === 1 ? "person" : "people"}`
                 : "Choose people and enter an amount to preview"}
             </p>
-            <p className="mt-1 text-[11px] leading-relaxed text-teal-900/70">
+            <p className="mt-1 text-[11px] leading-relaxed text-green-900/70">
               Vantage records this as a ledger entry. No card is charged and no
               money moves through the app.
             </p>

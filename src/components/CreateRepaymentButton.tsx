@@ -101,7 +101,7 @@ export function CreateRepaymentButton({
       >
         <form onSubmit={submit} className="space-y-4">
           {error && (
-            <p className="rounded-2xl border border-coral/25 bg-coral/5 px-3.5 py-2.5 text-sm font-semibold text-coral">
+            <p className="rounded-none border border-red-600/40 bg-red-50 px-3.5 py-2.5 text-sm font-semibold text-red-600">
               {error}
             </p>
           )}
@@ -141,9 +141,9 @@ export function CreateRepaymentButton({
               <button
                 type="button"
                 onClick={() => setMode("open")}
-                className={`rounded-2xl border p-3 text-left transition ${
+                className={`rounded-none border p-3 text-left transition ${
                   mode === "open"
-                    ? "border-teal-600/40 bg-teal-50"
+                    ? "border-green-600/40 bg-green-50"
                     : "border-line bg-white/60"
                 }`}
                 aria-pressed={mode === "open"}
@@ -156,9 +156,9 @@ export function CreateRepaymentButton({
               <button
                 type="button"
                 onClick={() => setMode("equal")}
-                className={`rounded-2xl border p-3 text-left transition ${
+                className={`rounded-none border p-3 text-left transition ${
                   mode === "equal"
-                    ? "border-teal-600/40 bg-teal-50"
+                    ? "border-green-600/40 bg-green-50"
                     : "border-line bg-white/60"
                 }`}
                 aria-pressed={mode === "equal"}
@@ -187,17 +187,17 @@ export function CreateRepaymentButton({
                       key={member.userId}
                       type="button"
                       onClick={() => toggle(member.userId)}
-                      className={`flex w-full items-center gap-2.5 rounded-2xl border p-2.5 text-left transition ${
+                      className={`flex w-full items-center gap-2.5 rounded-none border p-2.5 text-left transition ${
                         isSelected
-                          ? "border-teal-600/30 bg-teal-50/40"
+                          ? "border-green-600/30 bg-green-50/40"
                           : "border-line bg-white/50"
                       }`}
                       aria-pressed={isSelected}
                     >
                       <span
-                        className={`grid h-5 w-5 place-items-center rounded-md border text-[10px] font-bold ${
+                        className={`grid h-5 w-5 place-items-center rounded-none border text-[10px] font-bold ${
                           isSelected
-                            ? "border-teal-700 bg-teal-700 text-white"
+                            ? "border-green-700 bg-green-700 text-white"
                             : "border-line bg-white text-transparent"
                         }`}
                       >
@@ -224,7 +224,7 @@ export function CreateRepaymentButton({
 
           <div>
             <label className="field-label" htmlFor="repayment-note">
-              Note <span className="normal-case tracking-normal">(optional)</span>
+              Note <span className="font-normal">(optional)</span>
             </label>
             <textarea
               id="repayment-note"
@@ -235,7 +235,7 @@ export function CreateRepaymentButton({
             />
           </div>
 
-          <div className="rounded-2xl bg-amber-100/70 px-3.5 py-3 text-[11px] leading-relaxed text-ink/75">
+          <div className="rounded-none bg-neutral-100/70 px-3.5 py-3 text-[11px] leading-relaxed text-black/75">
             This is a tracker, not a payment processor. Contributions are handed
             over directly to the person collecting the money.
           </div>

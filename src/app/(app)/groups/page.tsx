@@ -39,10 +39,10 @@ export default async function GroupsPage() {
     <div className="space-y-8">
       <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-teal-700">
+          <p className="text-[11px] font-bold   text-green-700">
             {greeting}, {user.name.split(" ")[0]}
           </p>
-          <h1 className="mt-1 font-display text-4xl font-semibold tracking-tight sm:text-5xl">
+          <h1 className="mt-1  text-2xl font-semibold">
             Your groups
           </h1>
           <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted sm:text-base">
@@ -100,7 +100,7 @@ export default async function GroupsPage() {
           <p className="stat-label">Your net</p>
           <p
             className={`stat-value ${
-              net > 0 ? "text-teal-700" : net < 0 ? "text-coral" : ""
+              net > 0 ? "text-green-700" : net < 0 ? "text-red-600" : ""
             }`}
           >
             {formatPosition(net)}
@@ -109,17 +109,14 @@ export default async function GroupsPage() {
         <div className="stat">
           <p className="stat-label">Held by Vantage</p>
           <p className="stat-value flex items-center gap-1.5 text-base sm:text-lg">
-            <ShieldCheck className="h-4 w-4 text-teal-700" /> BND 0.00
+            <ShieldCheck className="h-4 w-4 text-green-700" /> BND 0.00
           </p>
         </div>
       </section>
 
       {summaries.length === 0 ? (
         <section className="card flex flex-col items-center px-6 py-14 text-center">
-          <span className="grid h-16 w-16 place-items-center rounded-3xl bg-teal-100 text-3xl">
-            🧾
-          </span>
-          <h2 className="mt-5 font-display text-2xl font-semibold">
+          <h2 className="text-2xl font-semibold">
             No groups yet
           </h2>
           <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted">
@@ -154,21 +151,18 @@ export default async function GroupsPage() {
                 <Link
                   key={summary.group.id}
                   href={`/groups/${summary.group.id}`}
-                  className="card group relative overflow-hidden p-5 transition hover:-translate-y-0.5 hover:border-teal-600/25 hover:shadow-lift"
+                  className="card group relative overflow-hidden p-5 transition hover:border-green-600/25"
                 >
                   <div className="flex items-start gap-3.5">
-                    <span className="grid h-14 w-14 shrink-0 place-items-center rounded-3xl bg-paper text-2xl">
-                      {summary.group.emoji}
-                    </span>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-2">
-                        <h3 className="truncate font-display text-xl font-semibold tracking-tight">
+                        <h3 className="truncate  text-xl font-semibold ">
                           {summary.group.name}
                         </h3>
-                        <ArrowUpRight className="mt-1 h-4 w-4 shrink-0 text-muted transition group-hover:text-teal-700" />
+                        <ArrowUpRight className="mt-1 h-4 w-4 shrink-0 text-muted transition group-hover:text-green-700" />
                       </div>
                       <p className="mt-0.5 flex items-center gap-2 text-xs font-semibold text-muted">
-                        <span className="pill bg-teal-50 text-teal-800">
+                        <span className="pill bg-green-50 text-green-800">
                           {KIND_LABELS[summary.group.kind]}
                         </span>
                         {summary.poolCount > 0 && (
@@ -192,11 +186,11 @@ export default async function GroupsPage() {
                     <div className="text-right">
                       <p className="stat-label">You</p>
                       <p
-                        className={`mt-0.5 text-base font-extrabold tabular-nums ${
+                        className={`mt-0.5 text-base font-bold tabular-nums ${
                           position > 0
-                            ? "text-teal-700"
+                            ? "text-green-700"
                             : position < 0
-                              ? "text-coral"
+                              ? "text-red-600"
                               : "text-muted"
                         }`}
                       >
@@ -241,7 +235,7 @@ export default async function GroupsPage() {
             },
           ].map(({ icon: Icon, title, text }) => (
             <div key={title} className="p-5">
-              <Icon className="h-5 w-5 text-teal-700" />
+              <Icon className="h-5 w-5 text-green-700" />
               <p className="mt-3 text-sm font-bold">{title}</p>
               <p className="mt-1 text-xs leading-relaxed text-muted">{text}</p>
             </div>

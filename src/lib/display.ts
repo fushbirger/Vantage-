@@ -8,17 +8,14 @@ export const KIND_LABELS: Record<Group["kind"], string> = {
   other: "Group",
 };
 
-export const CATEGORY_META: Record<
-  string,
-  { label: string; emoji: string }
-> = {
-  general: { label: "General", emoji: "🧾" },
-  food: { label: "Food", emoji: "🍜" },
-  groceries: { label: "Groceries", emoji: "🛒" },
-  transport: { label: "Transport", emoji: "⛽" },
-  stay: { label: "Stay", emoji: "🛏️" },
-  gift: { label: "Gift", emoji: "🎁" },
-  activity: { label: "Activity", emoji: "🎟️" },
+export const CATEGORY_META: Record<string, { label: string }> = {
+  general: { label: "General" },
+  food: { label: "Food" },
+  groceries: { label: "Groceries" },
+  transport: { label: "Transport" },
+  stay: { label: "Stay" },
+  gift: { label: "Gift" },
+  activity: { label: "Activity" },
 };
 
 export const SPLIT_RULE_LABELS: Record<SplitRule, string> = {
