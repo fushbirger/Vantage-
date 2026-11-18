@@ -7,7 +7,7 @@ export const metadata: Metadata = {
     template: "%s · Vantage",
   },
   description:
-    "Brunei’s effortless, non-custodial group expense splitter and money-pooling companion. Track shared spending, simplify debts, and settle via tarus or Pocket.",
+    "Brunei’s effortless, non-custodial group expense splitter and money-pooling companion. Track shared spending, net every pair directly, and settle via tarus or Pocket.",
   applicationName: "Vantage",
   appleWebApp: { capable: true, title: "Vantage", statusBarStyle: "default" },
   formatDetection: { telephone: false },

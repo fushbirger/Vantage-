@@ -111,6 +111,65 @@ CREATE TABLE IF NOT EXISTS pool_pledges (
   updated_at  INTEGER NOT NULL
 );
 
+-- Monthly bills. A database date drives generation; there is no cron worker.
+CREATE TABLE IF NOT EXISTS recurring_bills (
+  id               TEXT PRIMARY KEY,
+  group_id         TEXT NOT NULL REFERENCES "groups"(id) ON DELETE CASCADE,
+  title            TEXT NOT NULL,
+  category         TEXT NOT NULL DEFAULT 'general',
+  amount_cents     INTEGER NOT NULL CHECK (amount_cents > 0),
+  currency         TEXT NOT NULL DEFAULT 'BND',
+  fx_rate_to_bnd   REAL NOT NULL DEFAULT 1,
+  amount_bnd_cents INTEGER NOT NULL CHECK (amount_bnd_cents > 0),
+  paid_by          TEXT NOT NULL REFERENCES users(id),
+  split_rule       TEXT NOT NULL DEFAULT 'equal'
+                   CHECK (split_rule IN ('equal', 'exact', 'percent', 'shares')),
+  participants_json TEXT NOT NULL,                                  -- [{userId, value?}]
+  day_of_month     INTEGER NOT NULL CHECK (day_of_month BETWEEN 1 AND 28),
+  next_run_at      INTEGER NOT NULL,
+  active           INTEGER NOT NULL DEFAULT 1,
+  created_by       TEXT NOT NULL REFERENCES users(id),
+  created_at       INTEGER NOT NULL
+);
+
+-- One row per generated month, so a bill can never be posted twice.
+CREATE TABLE IF NOT EXISTS recurring_bill_runs (
+  id         TEXT PRIMARY KEY,
+  bill_id    TEXT NOT NULL REFERENCES recurring_bills(id) ON DELETE CASCADE,
+  period_key TEXT NOT NULL,                                         -- YYYY-MM
+  expense_id TEXT NOT NULL REFERENCES expenses(id) ON DELETE CASCADE,
+  created_at INTEGER NOT NULL,
+  UNIQUE (bill_id, period_key)
+);
+
+-- Repayment collections: a target that members fund openly or by equal split.
+CREATE TABLE IF NOT EXISTS repayments (
+  id                  TEXT PRIMARY KEY,
+  group_id            TEXT NOT NULL REFERENCES "groups"(id) ON DELETE CASCADE,
+  title               TEXT NOT NULL,
+  note                TEXT,
+  target_bnd_cents    INTEGER NOT NULL CHECK (target_bnd_cents > 0),
+  mode                TEXT NOT NULL DEFAULT 'open'
+                      CHECK (mode IN ('open', 'equal')),
+  participant_ids     TEXT,                                         -- JSON array for equal mode
+  status              TEXT NOT NULL DEFAULT 'open'
+                      CHECK (status IN ('open', 'fulfilled', 'cancelled')),
+  created_by          TEXT NOT NULL REFERENCES users(id),
+  created_at          INTEGER NOT NULL,
+  fulfilled_at        INTEGER
+);
+
+CREATE TABLE IF NOT EXISTS repayment_contributions (
+  id               TEXT PRIMARY KEY,
+  repayment_id     TEXT NOT NULL REFERENCES repayments(id) ON DELETE CASCADE,
+  user_id          TEXT NOT NULL REFERENCES users(id),
+  amount_bnd_cents INTEGER NOT NULL CHECK (amount_bnd_cents > 0),
+  kind             TEXT NOT NULL DEFAULT 'contribution'
+                   CHECK (kind IN ('contribution', 'cash_handed')),
+  note             TEXT,
+  created_at       INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS whatsapp_outbox (
   id          TEXT PRIMARY KEY,
   group_id    TEXT REFERENCES "groups"(id) ON DELETE CASCADE,
@@ -139,3 +198,7 @@ CREATE INDEX IF NOT EXISTS idx_settlements_group ON settlements(group_id, create
 CREATE INDEX IF NOT EXISTS idx_pools_group ON pools(group_id);
 CREATE INDEX IF NOT EXISTS idx_pledges_pool ON pool_pledges(pool_id);
 CREATE INDEX IF NOT EXISTS idx_outbox_user ON whatsapp_outbox(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_recurring_group ON recurring_bills(group_id, next_run_at);
+CREATE INDEX IF NOT EXISTS idx_recurring_due ON recurring_bills(active, next_run_at);
+CREATE INDEX IF NOT EXISTS idx_repayments_group ON repayments(group_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_repayment_contributions ON repayment_contributions(repayment_id, created_at DESC);

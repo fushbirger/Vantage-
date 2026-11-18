@@ -92,7 +92,7 @@ export function buildShareSummary(input: {
     lines.push("");
   }
 
-  lines.push("*Settle up (simplified)*");
+  lines.push("*Settle up (pairwise)*");
   if (transfers.length) {
     for (const transfer of transfers) {
       lines.push(

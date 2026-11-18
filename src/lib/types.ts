@@ -138,6 +138,88 @@ export interface PoolWithPledges extends Pool {
   pledges: PoolPledge[];
   pledgedCents: number;
   receivedCents: number;
+  remainingCents: number;
+  fulfilled: boolean;
+  contributorCount: number;
+}
+
+export type RepaymentMode = "open" | "equal";
+export type RepaymentStatus = "open" | "fulfilled" | "cancelled";
+
+export interface Repayment {
+  id: string;
+  groupId: string;
+  title: string;
+  note: string | null;
+  targetBndCents: number;
+  mode: RepaymentMode;
+  participantIds: string[];
+  status: RepaymentStatus;
+  createdBy: string;
+  createdAt: number;
+  fulfilledAt: number | null;
+  createdByName: string;
+}
+
+export interface RepaymentContribution {
+  id: string;
+  repaymentId: string;
+  userId: string;
+  amountBndCents: number;
+  kind: "contribution" | "cash_handed";
+  note: string | null;
+  createdAt: number;
+  userName: string;
+  userColor: string;
+}
+
+export interface RepaymentWithDetails extends Repayment {
+  contributions: RepaymentContribution[];
+  collectedBndCents: number;
+  remainingBndCents: number;
+  contributorCount: number;
+}
+
+export interface RecurringBill {
+  id: string;
+  groupId: string;
+  title: string;
+  category: string;
+  amountCents: number;
+  currency: CurrencyCode;
+  fxRateToBnd: number;
+  amountBndCents: number;
+  paidBy: string;
+  payerName: string;
+  splitRule: SplitRule;
+  participantIds: string[];
+  dayOfMonth: number;
+  nextRunAt: number;
+  active: number;
+  createdBy: string;
+  createdAt: number;
+}
+
+/** Clean JSON returned by the Vision LLM receipt extractor. */
+export interface ScannedReceipt {
+  merchant: string;
+  title: string;
+  dateIso: string | null;
+  currency: CurrencyCode;
+  totalCents: number;
+  items: Array<{ name: string; amountCents: number }>;
+  category: string;
+  confidence: number;
+}
+
+/** Result of a Vision LLM check on an uploaded payment screenshot. */
+export interface PaymentScreenshotCheck {
+  isPaymentScreenshot: boolean;
+  extractedAmountCents: number | null;
+  amountMatches: boolean | null;
+  reference: string | null;
+  confidence: number;
+  reason: string;
 }
 
 export interface Balance {

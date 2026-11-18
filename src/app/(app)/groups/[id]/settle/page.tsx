@@ -96,9 +96,9 @@ export default async function SettlePage({
             <Handshake className="h-8 w-8 text-teal-700" /> Settle up
           </h1>
           <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted">
-            Vantage nets out the whole group first, then routes each remaining
-            transfer to a real payment rail. The money moves directly between
-            you — never through Vantage.
+            Vantage nets each pair directly: what you owe someone minus what they
+            owe you. No debt is routed through a third person. The money moves
+            between you — never through Vantage.
           </p>
         </div>
         <ShareWhatsAppButton text={shareText} compact label="Share summary" />
@@ -159,12 +159,10 @@ export default async function SettlePage({
             <div className="mb-3 flex items-end justify-between gap-3">
               <div>
                 <h2 className="section-title flex items-center gap-2">
-                  <Scale className="h-4 w-4 text-teal-700" /> Simplified
-                  transfers
+                  <Scale className="h-4 w-4 text-teal-700" /> Direct transfers
                 </h2>
                 <p className="mt-0.5 text-xs text-muted">
-                  Greedy min-cash-flow · the fewest practical payments for this
-                  group
+                  Pairwise owed − paid · one net transfer per pair
                 </p>
               </div>
               <span className="chip chip-active">
@@ -240,8 +238,8 @@ export default async function SettlePage({
                     Everyone is square
                   </h3>
                   <p className="mt-1.5 max-w-sm text-sm leading-relaxed text-muted">
-                    No simplified transfers remain. Add a new expense and
-                    Vantage will rebalance the group automatically.
+                    No pairwise transfers remain. Add a new expense and
+                    Vantage will recalculate automatically.
                   </p>
                 </div>
               )}
@@ -357,10 +355,10 @@ export default async function SettlePage({
             </h2>
             <ol className="mt-3 space-y-3">
               {[
-                "Vantage simplifies the ledger into the fewest transfers.",
+                "Vantage nets each pair with simple owed − paid maths.",
                 "You pay the exact BND amount directly with tarus, tarusQR or Pocket.",
                 "Tap “mark as paid”, optionally attach a screenshot.",
-                "The recipient confirms — then the ledger is square.",
+                "The recipient confirms manually — AI can hint, but never decides.",
               ].map((step, index) => (
                 <li key={step} className="flex gap-2.5">
                   <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-teal-100 text-[11px] font-extrabold text-teal-800">

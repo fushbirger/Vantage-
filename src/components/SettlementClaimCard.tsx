@@ -2,12 +2,19 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, ImageIcon, X } from "lucide-react";
+import {
+  Check,
+  ImageIcon,
+  Loader2,
+  ScanLine,
+  ShieldCheck,
+  X,
+} from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { formatBnd } from "@/lib/currency";
 import { formatDateTime } from "@/lib/dates";
 import { RAIL_LABELS } from "@/lib/display";
-import type { Settlement } from "@/lib/types";
+import type { PaymentScreenshotCheck, Settlement } from "@/lib/types";
 
 export function SettlementClaimCard({
   settlement,
@@ -18,9 +25,38 @@ export function SettlementClaimCard({
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState<"confirm" | "reject" | null>(null);
+  const [checking, setChecking] = useState(false);
+  const [check, setCheck] = useState<PaymentScreenshotCheck | null>(null);
+  const [checkError, setCheckError] = useState("");
   const [error, setError] = useState("");
   const isCreditor = settlement.toUser === currentUserId;
   const isDebtor = settlement.fromUser === currentUserId;
+
+  async function runVisionCheck() {
+    setChecking(true);
+    setCheckError("");
+    try {
+      const response = await fetch(`/api/settlements/${settlement.id}/verify`, {
+        method: "POST",
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(
+          data.error ??
+            "The AI check is unavailable. Use the manual confirmation below.",
+        );
+      }
+      setCheck(data.check as PaymentScreenshotCheck);
+    } catch (caught) {
+      setCheckError(
+        caught instanceof Error
+          ? caught.message
+          : "The AI check is unavailable. Use manual confirmation.",
+      );
+    } finally {
+      setChecking(false);
+    }
+  }
 
   async function resolve(action: "confirm" | "reject") {
     setLoading(action);
@@ -89,6 +125,64 @@ export function SettlementClaimCard({
         </a>
       )}
 
+      {isCreditor && settlement.proofData && (
+        <div className="mt-3 rounded-2xl border border-line bg-white/60 p-3">
+          <div className="flex items-center justify-between gap-2">
+            <span className="inline-flex items-center gap-1.5 text-xs font-bold text-teal-900">
+              <ScanLine className="h-3.5 w-3.5" /> Screenshot check
+            </span>
+            <button
+              type="button"
+              onClick={runVisionCheck}
+              disabled={checking}
+              className="btn-secondary px-2.5 py-1.5 text-[11px]"
+            >
+              {checking ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <ScanLine className="h-3.5 w-3.5" />
+              )}
+              {checking ? "Checking…" : check ? "Check again" : "Check with AI"}
+            </button>
+          </div>
+
+          {check && (
+            <div className="mt-2 space-y-1">
+              <p
+                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+                  check.amountMatches
+                    ? "bg-teal-100 text-teal-800"
+                    : "bg-amber-200/70 text-ink/75"
+                }`}
+              >
+                <ShieldCheck className="h-3 w-3" />
+                {check.amountMatches
+                  ? "Amount looks right"
+                  : check.isPaymentScreenshot
+                    ? "Could not verify the amount"
+                    : "Does not look like a payment"}
+              </p>
+              <p className="text-[11px] leading-relaxed text-ink/70">
+                {check.reason}
+                {check.extractedAmountCents != null
+                  ? ` Read ${formatBnd(check.extractedAmountCents)} from the image.`
+                  : ""}
+              </p>
+              <p className="text-[10px] text-muted">
+                AI confidence {Math.round(check.confidence * 100)}%. This is a
+                hint, not proof.
+              </p>
+            </div>
+          )}
+
+          {checkError && (
+            <p className="mt-2 text-[11px] leading-relaxed text-ink/70">
+              {checkError}
+            </p>
+          )}
+        </div>
+      )}
+
       {error && (
         <p className="mt-3 rounded-xl bg-coral/10 px-3 py-2 text-xs font-semibold text-coral">
           {error}
@@ -104,7 +198,9 @@ export function SettlementClaimCard({
             className="btn flex-1 text-xs"
           >
             <Check className="h-3.5 w-3.5" />
-            {loading === "confirm" ? "Confirming…" : "Confirm received"}
+            {loading === "confirm"
+              ? "Confirming…"
+              : "Mark as paid (manual)"}
           </button>
           <button
             type="button"
@@ -116,6 +212,13 @@ export function SettlementClaimCard({
             {loading === "reject" ? "Updating…" : "Not received"}
           </button>
         </div>
+      )}
+
+      {isCreditor && (
+        <p className="mt-2 text-[11px] leading-relaxed text-ink/60">
+          A blurry or unusual screenshot should never block you — check your
+          bank, then use the manual button above.
+        </p>
       )}
 
       {isDebtor && (

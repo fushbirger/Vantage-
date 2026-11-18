@@ -8,6 +8,7 @@ import {
   Clock3,
   Copy,
   MessageCircle,
+  Phone,
   QrCode,
   ShieldCheck,
   Smartphone,
@@ -82,6 +83,7 @@ export function SettleDebtCard({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [phoneCopied, setPhoneCopied] = useState(false);
 
   const profileValue =
     rail === "pocket"
@@ -103,6 +105,17 @@ export function SettleDebtCard({
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
       setCopied(false);
+    }
+  }
+
+  async function copyPhone() {
+    if (!creditor.phone) return;
+    try {
+      await navigator.clipboard.writeText(creditor.phone);
+      setPhoneCopied(true);
+      window.setTimeout(() => setPhoneCopied(false), 2000);
+    } catch {
+      setPhoneCopied(false);
     }
   }
 
@@ -177,7 +190,7 @@ export function SettleDebtCard({
                 ? "You pay"
                 : isCreditor
                   ? "You receive"
-                  : "Simplified transfer"}
+                  : "Pairwise transfer"}
               {creditorProfile?.preferredRail
                 ? ` · ${RAIL_LABELS[creditorProfile.preferredRail]}`
                 : ""}
@@ -293,8 +306,8 @@ export function SettleDebtCard({
                     className="h-44 w-44 rounded-xl bg-white object-contain p-2"
                   />
                   <p className="mt-2 text-[11px] font-semibold text-muted">
-                    Scan {creditor.name}’s tarusQR in your banking app, then come
-                    back to mark it paid.
+                    This is {creditor.name}’s saved static QR image. Scan it in
+                    your banking app, then come back to mark it paid.
                   </p>
                 </div>
               )}
@@ -335,6 +348,23 @@ export function SettleDebtCard({
                     </p>
                   )}
               </div>
+
+              {creditor.phone && (
+                <button
+                  type="button"
+                  onClick={copyPhone}
+                  className="btn mt-3 w-full text-xs"
+                >
+                  {phoneCopied ? (
+                    <Check className="h-3.5 w-3.5" />
+                  ) : (
+                    <Phone className="h-3.5 w-3.5" />
+                  )}
+                  {phoneCopied
+                    ? `Copied ${creditor.phone}`
+                    : `Copy phone number · ${creditor.phone}`}
+                </button>
+              )}
 
               <button
                 type="button"

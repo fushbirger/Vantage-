@@ -4,6 +4,7 @@ import {
   createPledge,
   getGroup,
   getPool,
+  getPoolPledgedCents,
   isGroupMember,
 } from "@/lib/queries";
 import { notifyUser } from "@/lib/notify";
@@ -35,7 +36,25 @@ export async function POST(
 
     if (amountBndCents <= 0) {
       return NextResponse.json(
-        { error: "Enter a pledge above zero." },
+        { error: "Enter a contribution above zero." },
+        { status: 400 },
+      );
+    }
+
+    // Open contributions stop as soon as the cash pool reaches its cap.
+    const pledgedCents = getPoolPledgedCents(poolId);
+    const remainingCents = pool.goalBndCents - pledgedCents;
+    if (remainingCents <= 0) {
+      return NextResponse.json(
+        { error: "This pool is already fulfilled." },
+        { status: 409 },
+      );
+    }
+    if (amountBndCents > remainingCents) {
+      return NextResponse.json(
+        {
+          error: `Only BND ${(remainingCents / 100).toFixed(2)} remains in this pool.`,
+        },
         { status: 400 },
       );
     }
@@ -68,6 +87,15 @@ export async function POST(
       }
     }
 
-    return NextResponse.json({ ok: true, amountBndCents, status });
+    return NextResponse.json({
+      ok: true,
+      amountBndCents,
+      status,
+      fulfilled: pledgedCents + amountBndCents >= pool.goalBndCents,
+      remainingCents: Math.max(
+        0,
+        pool.goalBndCents - pledgedCents - amountBndCents,
+      ),
+    });
   });
 }

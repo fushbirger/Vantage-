@@ -200,8 +200,8 @@ export default async function GroupsPage() {
             },
             {
               icon: Sparkles,
-              title: "Simplify the web",
-              text: "A→B→C becomes A→C. Vantage finds the fewest transfers for the whole group.",
+              title: "Simple pairwise maths",
+              text: "Each pair gets one net figure: owed minus paid. No debt is routed through a third person.",
             },
             {
               icon: ShieldCheck,

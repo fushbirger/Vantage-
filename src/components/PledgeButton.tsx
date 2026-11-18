@@ -4,27 +4,25 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { HandCoins } from "lucide-react";
 import { Modal } from "@/components/Modal";
-import { parseAmountToCents } from "@/lib/currency";
+import { formatBnd, parseAmountToCents } from "@/lib/currency";
 
 export function PledgeButton({
   poolId,
   poolTitle,
-  existingAmount,
-  existingStatus,
+  remainingCents,
+  fulfilled,
+  myContributedCents,
 }: {
   poolId: string;
   poolTitle: string;
-  existingAmount: number | null;
-  existingStatus: "pledged" | "received" | null;
+  remainingCents: number;
+  fulfilled: boolean;
+  myContributedCents: number;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [amount, setAmount] = useState(
-    existingAmount ? (existingAmount / 100).toFixed(2) : "",
-  );
-  const [status, setStatus] = useState<"pledged" | "received">(
-    existingStatus ?? "pledged",
-  );
+  const [amount, setAmount] = useState("");
+  const [status, setStatus] = useState<"pledged" | "received">("pledged");
   const [note, setNote] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -33,7 +31,10 @@ export function PledgeButton({
     event.preventDefault();
     setError("");
     const cents = parseAmountToCents(amount);
-    if (!cents) return setError("Enter a pledge above zero.");
+    if (!cents) return setError("Enter a contribution above zero.");
+    if (cents > remainingCents) {
+      return setError(`Only ${formatBnd(remainingCents)} remains in this pool.`);
+    }
     setSaving(true);
     try {
       const response = await fetch(`/api/pools/${poolId}/pledges`, {
@@ -42,11 +43,20 @@ export function PledgeButton({
         body: JSON.stringify({ amount, status, note }),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? "Could not save pledge.");
+      if (!response.ok) {
+        throw new Error(data.error ?? "Could not save contribution.");
+      }
       setOpen(false);
+      setAmount("");
+      setNote("");
+      setStatus("pledged");
       router.refresh();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Could not save pledge.");
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "Could not save contribution.",
+      );
       setSaving(false);
     }
   }
@@ -56,17 +66,22 @@ export function PledgeButton({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={existingAmount ? "btn-secondary text-xs" : "btn text-xs"}
+        disabled={fulfilled}
+        className={myContributedCents > 0 ? "btn-secondary text-xs" : "btn text-xs"}
       >
         <HandCoins className="h-3.5 w-3.5" />
-        {existingAmount ? "Edit pledge" : "Pledge"}
+        {fulfilled
+          ? "Pool fulfilled"
+          : myContributedCents > 0
+            ? "Add contribution"
+            : "Contribute"}
       </button>
 
       <Modal
         open={open}
         onClose={() => setOpen(false)}
-        title="Pledge to this pool"
-        subtitle={poolTitle}
+        title="Contribute to this pool"
+        subtitle={`${poolTitle} · ${formatBnd(remainingCents)} remaining`}
         icon={<HandCoins className="h-5 w-5" />}
       >
         <form onSubmit={submit} className="space-y-4">
@@ -88,6 +103,10 @@ export function PledgeButton({
               onChange={(event) => setAmount(event.target.value)}
               required
             />
+            <p className="mt-1 text-[11px] text-muted">
+              Anyone can contribute any amount. Contributions stop automatically
+              once the pool reaches its cap.
+            </p>
           </div>
           <div>
             <span className="field-label">Status</span>
@@ -145,7 +164,7 @@ export function PledgeButton({
               Cancel
             </button>
             <button type="submit" disabled={saving} className="btn flex-1">
-              {saving ? "Saving…" : "Save pledge"}
+              {saving ? "Saving…" : "Add contribution"}
             </button>
           </div>
         </form>

@@ -1,7 +1,8 @@
 import "server-only";
 import { db } from "./db";
-import { computeNetBalances, totalSpendCents } from "./balances";
-import { simplifyDebts, transfersWithPeople, type NetBalance } from "./simplify";
+import { computeNetBalances, totalSpendCents, type NetBalance } from "./balances";
+import { computePairwiseTransfers, transfersWithPeople } from "./pairwise";
+import { getRecurringBills, materializeDueBills } from "./recurring";
 import type {
   Balance,
   ExpenseWithSplits,
@@ -12,6 +13,10 @@ import type {
   Pool,
   PoolPledge,
   PoolWithPledges,
+  RecurringBill,
+  RepaymentContribution,
+  RepaymentMode,
+  RepaymentWithDetails,
   Settlement,
   Transfer,
   User,
@@ -37,6 +42,8 @@ export interface GroupLedger {
   expenses: ExpenseWithSplits[];
   settlements: Settlement[];
   pools: PoolWithPledges[];
+  repayments: RepaymentWithDetails[];
+  recurringBills: RecurringBill[];
   balances: Balance[];
   transfers: Array<
     Transfer & {
@@ -263,15 +270,28 @@ function getPools(groupId: string): PoolWithPledges[] {
 
   return pools.map((pool) => {
     const pledges = getPoolPledges(pool.id);
+    const pledgedCents = pledges.reduce((sum, p) => sum + p.amountBndCents, 0);
     return {
       ...pool,
       pledges,
-      pledgedCents: pledges.reduce((sum, p) => sum + p.amountBndCents, 0),
+      pledgedCents,
       receivedCents: pledges
         .filter((p) => p.status === "received")
         .reduce((sum, p) => sum + p.amountBndCents, 0),
+      remainingCents: Math.max(0, pool.goalBndCents - pledgedCents),
+      fulfilled: pledgedCents >= pool.goalBndCents,
+      contributorCount: new Set(pledges.map((p) => p.userId)).size,
     };
   });
+}
+
+export function getPoolPledgedCents(poolId: string): number {
+  const row = db
+    .prepare(
+      "SELECT COALESCE(SUM(amount_bnd_cents), 0) AS total FROM pool_pledges WHERE pool_id = ?",
+    )
+    .get(poolId) as { total: number };
+  return row.total;
 }
 
 function getExpenses(groupId: string): ExpenseWithSplits[] {
@@ -338,10 +358,15 @@ export function getGroupLedger(groupId: string): GroupLedger | null {
   const group = getGroup(groupId);
   if (!group) return null;
 
+  // Lazy monthly-bill posting keeps scheduled rules working without a worker.
+  materializeDueBills();
+
   const members = getGroupMembers(groupId);
   const expenses = getExpenses(groupId);
   const settlements = getSettlements(groupId);
   const pools = getPools(groupId);
+  const repayments = getRepayments(groupId);
+  const recurringBills = getRecurringBills(groupId);
 
   const net: NetBalance[] = computeNetBalances({
     memberIds: members.map((m) => m.userId),
@@ -376,7 +401,21 @@ export function getGroupLedger(groupId: string): GroupLedger | null {
   });
 
   const transfers = transfersWithPeople(
-    simplifyDebts(balances),
+    computePairwiseTransfers({
+      expenses: expenses.map((expense) => ({
+        paidBy: expense.paidBy,
+        splits: expense.splits.map((split) => ({
+          userId: split.userId,
+          amountBndCents: split.amountBndCents,
+        })),
+      })),
+      settlements: settlements.map((settlement) => ({
+        fromUser: settlement.fromUser,
+        toUser: settlement.toUser,
+        amountBndCents: settlement.amountBndCents,
+        status: settlement.status,
+      })),
+    }),
     members.map((m) => ({
       userId: m.userId,
       name: m.name,
@@ -398,6 +437,8 @@ export function getGroupLedger(groupId: string): GroupLedger | null {
     expenses,
     settlements,
     pools,
+    repayments,
+    recurringBills,
     balances,
     transfers,
     totalCents: totalSpendCents(expenses),
@@ -665,6 +706,10 @@ export function createPool(input: {
     .get(id) as Pool;
 }
 
+/**
+ * Pools accept open contributions: the same member can chip in more than once.
+ * The route enforces the goal cap before this insert.
+ */
 export function createPledge(input: {
   poolId: string;
   userId: string;
@@ -673,42 +718,20 @@ export function createPledge(input: {
   note: string | null;
 }): void {
   const now = Date.now();
-  const existing = db
-    .prepare(
-      "SELECT id, amount_bnd_cents AS amount FROM pool_pledges WHERE pool_id = ? AND user_id = ?",
-    )
-    .get(input.poolId, input.userId) as
-    | { id: string; amount: number }
-    | undefined;
-
-  if (existing) {
-    db.prepare(
-      `UPDATE pool_pledges
-       SET amount_bnd_cents = ?, status = ?, note = ?, updated_at = ?
-       WHERE id = ?`,
-    ).run(
-      input.amountBndCents,
-      input.status,
-      input.note,
-      now,
-      existing.id,
-    );
-  } else {
-    db.prepare(
-      `INSERT INTO pool_pledges
-         (id, pool_id, user_id, amount_bnd_cents, status, note, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    ).run(
-      `pl_${crypto.randomUUID()}`,
-      input.poolId,
-      input.userId,
-      input.amountBndCents,
-      input.status,
-      input.note,
-      now,
-      now,
-    );
-  }
+  db.prepare(
+    `INSERT INTO pool_pledges
+       (id, pool_id, user_id, amount_bnd_cents, status, note, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(
+    `pl_${crypto.randomUUID()}`,
+    input.poolId,
+    input.userId,
+    input.amountBndCents,
+    input.status,
+    input.note,
+    now,
+    now,
+  );
 }
 
 export function getPoolGroupId(poolId: string): string | null {
@@ -731,6 +754,210 @@ export function getPool(poolId: string): Pool | null {
       )
       .get(poolId) as Pool | undefined) ?? null
   );
+}
+
+interface RepaymentRow {
+  id: string;
+  groupId: string;
+  title: string;
+  note: string | null;
+  targetBndCents: number;
+  mode: RepaymentMode;
+  participantIds: string | null;
+  status: "open" | "fulfilled" | "cancelled";
+  createdBy: string;
+  createdAt: number;
+  fulfilledAt: number | null;
+  createdByName: string;
+}
+
+const REPAYMENT_COLS = `r.id, r.group_id AS groupId, r.title, r.note,
+  r.target_bnd_cents AS targetBndCents, r.mode, r.participant_ids AS participantIds,
+  r.status, r.created_by AS createdBy, r.created_at AS createdAt,
+  r.fulfilled_at AS fulfilledAt, u.name AS createdByName`;
+
+function repaymentFromRow(row: RepaymentRow): RepaymentWithDetails {
+  const contributions = getRepaymentContributions(row.id);
+  const collectedBndCents = contributions.reduce(
+    (sum, contribution) => sum + contribution.amountBndCents,
+    0,
+  );
+  return {
+    ...row,
+    participantIds: row.participantIds
+      ? (JSON.parse(row.participantIds) as string[])
+      : [],
+    contributions,
+    collectedBndCents,
+    remainingBndCents: Math.max(0, row.targetBndCents - collectedBndCents),
+    contributorCount: new Set(contributions.map((entry) => entry.userId)).size,
+  };
+}
+
+function getRepaymentContributions(
+  repaymentId: string,
+): RepaymentContribution[] {
+  return db
+    .prepare(
+      `SELECT c.id, c.repayment_id AS repaymentId, c.user_id AS userId,
+              c.amount_bnd_cents AS amountBndCents, c.kind, c.note,
+              c.created_at AS createdAt, u.name AS userName,
+              u.avatar_color AS userColor
+       FROM repayment_contributions c JOIN users u ON u.id = c.user_id
+       WHERE c.repayment_id = ?
+       ORDER BY c.created_at DESC`,
+    )
+    .all(repaymentId) as RepaymentContribution[];
+}
+
+export function getRepayments(groupId: string): RepaymentWithDetails[] {
+  const rows = db
+    .prepare(
+      `SELECT ${REPAYMENT_COLS}
+       FROM repayments r JOIN users u ON u.id = r.created_by
+       WHERE r.group_id = ?
+       ORDER BY r.created_at DESC`,
+    )
+    .all(groupId) as RepaymentRow[];
+  return rows.map(repaymentFromRow);
+}
+
+export function getRepayment(id: string): RepaymentWithDetails | null {
+  const row = db
+    .prepare(
+      `SELECT ${REPAYMENT_COLS}
+       FROM repayments r JOIN users u ON u.id = r.created_by
+       WHERE r.id = ?`,
+    )
+    .get(id) as RepaymentRow | undefined;
+  return row ? repaymentFromRow(row) : null;
+}
+
+export function createRepayment(input: {
+  groupId: string;
+  title: string;
+  note: string | null;
+  targetBndCents: number;
+  mode: RepaymentMode;
+  participantIds: string[];
+  createdBy: string;
+}): RepaymentWithDetails {
+  const id = `rpy_${crypto.randomUUID()}`;
+  const now = Date.now();
+  db.prepare(
+    `INSERT INTO repayments
+       (id, group_id, title, note, target_bnd_cents, mode, participant_ids,
+        status, created_by, created_at, fulfilled_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, 'open', ?, ?, NULL)`,
+  ).run(
+    id,
+    input.groupId,
+    input.title.trim(),
+    input.note,
+    input.targetBndCents,
+    input.mode,
+    input.mode === "equal" ? JSON.stringify(input.participantIds) : null,
+    input.createdBy,
+    now,
+  );
+  return getRepayment(id)!;
+}
+
+export class RepaymentError extends Error {}
+
+/**
+ * Record a contribution toward a repayment. Capped at the target: the ledger
+ * closes as soon as the amount needed to pay has been reached.
+ */
+export function contributeToRepayment(input: {
+  repaymentId: string;
+  userId: string;
+  amountBndCents: number;
+  kind: "contribution" | "cash_handed";
+  note: string | null;
+}): RepaymentWithDetails {
+  const now = Date.now();
+
+  const run = db.transaction(() => {
+    const row = db
+      .prepare(
+        `SELECT id, target_bnd_cents AS target, status, created_by AS createdBy,
+                mode, participant_ids AS participantIds
+         FROM repayments WHERE id = ?`,
+      )
+      .get(input.repaymentId) as
+      | {
+          id: string;
+          target: number;
+          status: "open" | "fulfilled" | "cancelled";
+          createdBy: string;
+          mode: RepaymentMode;
+          participantIds: string | null;
+        }
+      | undefined;
+
+    if (!row) throw new RepaymentError("Repayment not found.");
+    if (row.status !== "open") {
+      throw new RepaymentError("This repayment is already closed.");
+    }
+    if (input.kind === "cash_handed" && row.createdBy !== input.userId) {
+      throw new RepaymentError(
+        "Only the repayment creator can record cash handed back.",
+      );
+    }
+    if (row.mode === "equal" && input.kind === "contribution") {
+      const participants = row.participantIds
+        ? (JSON.parse(row.participantIds) as string[])
+        : [];
+      if (
+        participants.length &&
+        !participants.includes(input.userId) &&
+        row.createdBy !== input.userId
+      ) {
+        throw new RepaymentError(
+          "This repayment is limited to its selected members.",
+        );
+      }
+    }
+
+    const { total } = db
+      .prepare(
+        "SELECT COALESCE(SUM(amount_bnd_cents), 0) AS total FROM repayment_contributions WHERE repayment_id = ?",
+      )
+      .get(input.repaymentId) as { total: number };
+    const remaining = row.target - total;
+    if (remaining <= 0) {
+      throw new RepaymentError("This repayment is already fully funded.");
+    }
+    if (input.amountBndCents > remaining) {
+      throw new RepaymentError(
+        "The amount is more than the remaining balance.",
+      );
+    }
+
+    db.prepare(
+      `INSERT INTO repayment_contributions
+         (id, repayment_id, user_id, amount_bnd_cents, kind, note, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    ).run(
+      `rpc_${crypto.randomUUID()}`,
+      input.repaymentId,
+      input.userId,
+      input.amountBndCents,
+      input.kind,
+      input.note,
+      now,
+    );
+
+    if (total + input.amountBndCents >= row.target) {
+      db.prepare(
+        "UPDATE repayments SET status = 'fulfilled', fulfilled_at = ? WHERE id = ?",
+      ).run(now, input.repaymentId);
+    }
+  });
+
+  run();
+  return getRepayment(input.repaymentId)!;
 }
 
 export function getActivityForUser(userId: string): ActivityItem[] {
