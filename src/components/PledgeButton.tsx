@@ -86,7 +86,7 @@ export function PledgeButton({
       >
         <form onSubmit={submit} className="space-y-4">
           {error && (
-            <p className="rounded-2xl border border-coral/25 bg-coral/5 px-3.5 py-2.5 text-sm font-semibold text-coral">
+            <p className="rounded-none border border-red-600/40 bg-red-50 px-3.5 py-2.5 text-sm font-semibold text-red-600">
               {error}
             </p>
           )}
@@ -114,9 +114,9 @@ export function PledgeButton({
               <button
                 type="button"
                 onClick={() => setStatus("pledged")}
-                className={`rounded-2xl border p-3 text-left transition ${
+                className={`rounded-none border p-3 text-left transition ${
                   status === "pledged"
-                    ? "border-teal-600/40 bg-teal-50"
+                    ? "border-green-600/40 bg-green-50"
                     : "border-line bg-white/60"
                 }`}
                 aria-pressed={status === "pledged"}
@@ -129,9 +129,9 @@ export function PledgeButton({
               <button
                 type="button"
                 onClick={() => setStatus("received")}
-                className={`rounded-2xl border p-3 text-left transition ${
+                className={`rounded-none border p-3 text-left transition ${
                   status === "received"
-                    ? "border-teal-600/40 bg-teal-50"
+                    ? "border-green-600/40 bg-green-50"
                     : "border-line bg-white/60"
                 }`}
                 aria-pressed={status === "received"}
@@ -145,7 +145,7 @@ export function PledgeButton({
           </div>
           <div>
             <label className="field-label" htmlFor="pledge-note">
-              Note <span className="normal-case tracking-normal">(optional)</span>
+              Note <span className="font-normal">(optional)</span>
             </label>
             <input
               id="pledge-note"

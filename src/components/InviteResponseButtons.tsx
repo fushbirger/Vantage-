@@ -44,7 +44,7 @@ export function InviteResponseButtons({ groupId }: { groupId: string }) {
           <X className="h-3.5 w-3.5" /> Decline
         </button>
       </div>
-      {error && <p className="text-[11px] font-semibold text-coral">{error}</p>}
+      {error && <p className="text-[11px] font-semibold text-red-600">{error}</p>}
     </div>
   );
 }

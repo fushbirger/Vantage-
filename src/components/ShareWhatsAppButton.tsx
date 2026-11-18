@@ -39,12 +39,12 @@ export function ShareWhatsAppButton({
       <button
         type="button"
         onClick={copy}
-        className="grid h-10 w-10 place-items-center rounded-full border border-line bg-white/70 text-muted transition hover:border-teal-400 hover:text-teal-800"
+        className="grid h-10 w-10 place-items-center rounded-none border border-line bg-white/70 text-muted transition hover:border-green-400 hover:text-green-800"
         aria-label={copied ? "Summary copied" : "Copy summary"}
         title="Copy summary"
       >
         {copied ? (
-          <Check className="h-4 w-4 text-teal-700" />
+          <Check className="h-4 w-4 text-green-700" />
         ) : (
           <Copy className="h-4 w-4" />
         )}

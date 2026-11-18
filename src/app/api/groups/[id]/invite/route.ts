@@ -32,7 +32,7 @@ export async function POST(
           userId: invitedId,
           groupId,
           template: "group_invite",
-          body: `${user.name} invited you to “${group.name}” ${group.emoji} on Vantage.\nAccept or decline: ${appBaseUrl()}/groups\nNothing is added to your ledger until you accept.`,
+          body: `${user.name} invited you to “${group.name}” on Vantage.\nAccept or decline: ${appBaseUrl()}/groups\nNothing is added to your ledger until you accept.`,
         });
       } catch (error) {
         console.error("WhatsApp invite failed", error);

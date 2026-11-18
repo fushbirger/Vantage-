@@ -46,7 +46,7 @@ export function ProfileForm({
   return (
     <form onSubmit={submit} className="space-y-4">
       {error && (
-        <p className="rounded-2xl border border-coral/25 bg-coral/5 px-3.5 py-2.5 text-sm font-semibold text-coral">
+        <p className="rounded-none border border-red-600/40 bg-red-50 px-3.5 py-2.5 text-sm font-semibold text-red-600">
           {error}
         </p>
       )}
@@ -82,7 +82,7 @@ export function ProfileForm({
       <button type="submit" disabled={saving} className="btn-secondary w-full">
         {saved ? (
           <>
-            <Check className="h-4 w-4 text-teal-700" /> Saved
+            <Check className="h-4 w-4 text-green-700" /> Saved
           </>
         ) : (
           <>

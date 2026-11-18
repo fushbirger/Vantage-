@@ -54,7 +54,7 @@ export function CreatePoolButton({ groupId }: { groupId: string }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="btn-secondary text-xs"
+        className="btn-secondary whitespace-nowrap text-xs"
       >
         <Target className="h-3.5 w-3.5" /> New pool
       </button>
@@ -67,7 +67,7 @@ export function CreatePoolButton({ groupId }: { groupId: string }) {
       >
         <form onSubmit={submit} className="space-y-4">
           {error && (
-            <p className="rounded-2xl border border-coral/25 bg-coral/5 px-3.5 py-2.5 text-sm font-semibold text-coral">
+            <p className="rounded-none border border-red-600/40 bg-red-50 px-3.5 py-2.5 text-sm font-semibold text-red-600">
               {error}
             </p>
           )}
@@ -115,7 +115,7 @@ export function CreatePoolButton({ groupId }: { groupId: string }) {
           </div>
           <div>
             <label className="field-label" htmlFor="pool-note">
-              Note <span className="normal-case tracking-normal">(optional)</span>
+              Note <span className="font-normal">(optional)</span>
             </label>
             <textarea
               id="pool-note"
@@ -125,7 +125,7 @@ export function CreatePoolButton({ groupId }: { groupId: string }) {
               onChange={(event) => setNote(event.target.value)}
             />
           </div>
-          <div className="rounded-2xl bg-amber-100/70 px-3.5 py-3 text-[11px] leading-relaxed text-ink/75">
+          <div className="rounded-none bg-neutral-100/70 px-3.5 py-3 text-[11px] leading-relaxed text-black/75">
             A pool is a promise tracker. Contributions are handed over outside
             Vantage — usually via tarus or Pocket — and marked received here.
           </div>

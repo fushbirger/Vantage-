@@ -108,7 +108,7 @@ export function CreateRecurringBillButton({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="btn-secondary text-xs"
+        className="btn-secondary whitespace-nowrap text-xs"
       >
         <CalendarClock className="h-3.5 w-3.5" /> Schedule monthly
       </button>
@@ -122,7 +122,7 @@ export function CreateRecurringBillButton({
       >
         <form onSubmit={submit} className="space-y-4">
           {error && (
-            <p className="rounded-2xl border border-coral/25 bg-coral/5 px-3.5 py-2.5 text-sm font-semibold text-coral">
+            <p className="rounded-none border border-red-600/40 bg-red-50 px-3.5 py-2.5 text-sm font-semibold text-red-600">
               {error}
             </p>
           )}
@@ -207,7 +207,7 @@ export function CreateRecurringBillButton({
               >
                 {CATEGORIES.map((code: string) => (
                   <option key={code} value={code}>
-                    {CATEGORY_META[code].emoji} {CATEGORY_META[code].label}
+                    {CATEGORY_META[code].label}
                   </option>
                 ))}
               </select>
@@ -263,17 +263,17 @@ export function CreateRecurringBillButton({
                     key={member.userId}
                     type="button"
                     onClick={() => toggle(member.userId)}
-                    className={`flex w-full items-center gap-2.5 rounded-2xl border p-2.5 text-left transition ${
+                    className={`flex w-full items-center gap-2.5 rounded-none border p-2.5 text-left transition ${
                       isSelected
-                        ? "border-teal-600/30 bg-teal-50/40"
+                        ? "border-green-600/30 bg-green-50/40"
                         : "border-line bg-white/50"
                     }`}
                     aria-pressed={isSelected}
                   >
                     <span
-                      className={`grid h-5 w-5 place-items-center rounded-md border text-[10px] font-bold ${
+                      className={`grid h-5 w-5 place-items-center rounded-none border text-[10px] font-bold ${
                         isSelected
-                          ? "border-teal-700 bg-teal-700 text-white"
+                          ? "border-green-700 bg-green-700 text-white"
                           : "border-line bg-white text-transparent"
                       }`}
                     >
@@ -291,7 +291,7 @@ export function CreateRecurringBillButton({
             </div>
           </div>
 
-          <div className="rounded-2xl bg-amber-100/70 px-3.5 py-3 text-[11px] leading-relaxed text-ink/75">
+          <div className="rounded-none bg-neutral-100/70 px-3.5 py-3 text-[11px] leading-relaxed text-black/75">
             The bill posts on day {Math.min(28, Math.max(1, Number(day) || 1))}{" "}
             each month (days 1–28 only). You can pause it from the group page.
           </div>

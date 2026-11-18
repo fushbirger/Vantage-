@@ -29,10 +29,10 @@ export default async function AccountPage() {
   return (
     <div className="space-y-5">
       <header>
-        <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-teal-700">
+        <p className="text-[11px] font-bold   text-green-700">
           Account
         </p>
-        <h1 className="mt-1 font-display text-4xl font-semibold tracking-tight sm:text-5xl">
+        <h1 className="mt-1  text-2xl font-semibold">
           Your profile
         </h1>
         <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted">
@@ -51,7 +51,7 @@ export default async function AccountPage() {
                 size="xl"
               />
               <div className="min-w-0 flex-1">
-                <h2 className="truncate font-display text-2xl font-semibold">
+                <h2 className="truncate  text-2xl font-semibold">
                   {user.name}
                 </h2>
                 <p className="truncate text-sm text-muted">@{user.username}</p>
@@ -60,11 +60,11 @@ export default async function AccountPage() {
                   {groups.length === 1 ? "" : "s"}
                 </p>
               </div>
-              <span className="pill bg-teal-50 text-teal-800">Demo</span>
+              <span className="pill bg-green-50 text-green-800">Demo</span>
             </div>
             <div className="mt-5 border-t border-line/80 pt-5">
               <h3 className="mb-3 flex items-center gap-2 text-sm font-bold">
-                <UserRound className="h-4 w-4 text-teal-700" /> Profile details
+                <UserRound className="h-4 w-4 text-green-700" /> Profile details
               </h3>
               <ProfileForm name={user.name} phone={user.phone} />
             </div>
@@ -73,7 +73,7 @@ export default async function AccountPage() {
           <section className="card p-5 sm:p-6">
             <div className="mb-4">
               <h2 className="section-title flex items-center gap-2">
-                <Smartphone className="h-4 w-4 text-teal-700" /> Payment routing
+                <Smartphone className="h-4 w-4 text-green-700" /> Payment routing
               </h2>
               <p className="mt-1 text-xs leading-relaxed text-muted">
                 Save a tarus proxy, a tarusQR image and a Pocket link. The
@@ -87,31 +87,31 @@ export default async function AccountPage() {
         <div className="min-w-0 space-y-5">
           <section className="card p-5">
             <h2 className="section-title flex items-center gap-2">
-              <MessageCircle className="h-4 w-4 text-teal-700" /> WhatsApp
+              <MessageCircle className="h-4 w-4 text-green-700" /> WhatsApp
               service
             </h2>
             <div className="mt-3 space-y-2.5">
-              <div className="flex items-center justify-between gap-3 rounded-2xl bg-paper px-3 py-2.5">
+              <div className="flex items-center justify-between gap-3 rounded-none bg-white px-3 py-2.5">
                 <span className="text-xs font-semibold text-muted">
                   Cloud API
                 </span>
                 <span
                   className={`pill ${
                     integration.configured
-                      ? "bg-teal-100 text-teal-800"
-                      : "bg-amber-100 text-ink/75"
+                      ? "bg-green-100 text-green-800"
+                      : "bg-neutral-100 text-black/75"
                   }`}
                 >
                   {integration.configured ? "Connected" : "Simulation"}
                 </span>
               </div>
-              <div className="flex items-center justify-between gap-3 rounded-2xl bg-paper px-3 py-2.5">
+              <div className="flex items-center justify-between gap-3 rounded-none bg-white px-3 py-2.5">
                 <span className="text-xs font-semibold text-muted">
                   API version
                 </span>
                 <span className="text-xs font-bold">{integration.apiVersion}</span>
               </div>
-              <div className="flex items-center justify-between gap-3 rounded-2xl bg-paper px-3 py-2.5">
+              <div className="flex items-center justify-between gap-3 rounded-none bg-white px-3 py-2.5">
                 <span className="text-xs font-semibold text-muted">
                   Webhook token
                 </span>
@@ -119,7 +119,7 @@ export default async function AccountPage() {
                   {integration.verifyTokenSet ? "Configured" : "Not set"}
                 </span>
               </div>
-              <div className="flex items-center justify-between gap-3 rounded-2xl bg-paper px-3 py-2.5">
+              <div className="flex items-center justify-between gap-3 rounded-none bg-white px-3 py-2.5">
                 <span className="text-xs font-semibold text-muted">
                   Phone number ID
                 </span>
@@ -138,11 +138,11 @@ export default async function AccountPage() {
             </Link>
           </section>
 
-          <section className="rounded-3xl border border-teal-700/15 bg-teal-800 p-5 text-white">
-            <p className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.16em] text-white/60">
+          <section className="rounded-none border border-green-700/15 bg-green-800 p-5 text-white">
+            <p className="flex items-center gap-1.5 text-[11px] font-bold   text-white/60">
               <ShieldCheck className="h-3.5 w-3.5" /> Non-custodial by design
             </p>
-            <p className="mt-2 font-display text-2xl font-semibold">
+            <p className="mt-2  text-2xl font-semibold">
               BND 0.00 under management.
             </p>
             <p className="mt-1.5 text-xs leading-relaxed text-white/70">
@@ -154,7 +154,7 @@ export default async function AccountPage() {
 
           <section className="card p-5">
             <h2 className="section-title flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-teal-700" /> Data boundaries
+              <CheckCircle2 className="h-4 w-4 text-green-700" /> Data boundaries
             </h2>
             <ul className="mt-3 space-y-2 text-xs leading-relaxed text-muted">
               <li>• No card numbers or bank logins are collected.</li>

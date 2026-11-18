@@ -83,7 +83,7 @@ export function buildShareSummary(input: {
   const total = expenses.reduce((sum, e) => sum + e.amountBndCents, 0);
   const lines: string[] = [];
 
-  lines.push(`*${group.name}* ${group.emoji}`);
+  lines.push(`*${group.name}*`);
   lines.push(
     `Total logged: *${formatBnd(total)}* · ${expenses.length} expense${expenses.length === 1 ? "" : "s"}`,
   );
@@ -112,7 +112,7 @@ export function buildShareSummary(input: {
       );
     }
   } else {
-    lines.push("• Everyone is square 🎉");
+    lines.push("• Everyone is square");
   }
   lines.push("");
 
@@ -140,7 +140,7 @@ export function expenseAddedBody(input: {
   groupId: string;
   yourShareCents: number;
 }): string {
-  return `💸 ${input.actorName} added “${input.title}” (${formatBnd(input.amountBndCents)}) in ${input.groupName}.\nYour share: ${formatBnd(input.yourShareCents)}.\nOpen Vantage: ${groupUrl(input.groupId)}`;
+  return `${input.actorName} added “${input.title}” (${formatBnd(input.amountBndCents)}) in ${input.groupName}.\nYour share: ${formatBnd(input.yourShareCents)}.\nOpen Vantage: ${groupUrl(input.groupId)}`;
 }
 
 export function expenseConfirmRequestBody(input: {
@@ -155,7 +155,7 @@ export function expenseConfirmRequestBody(input: {
   const involvement = input.paidByYou
     ? "It says you paid."
     : `Your share: ${formatBnd(input.yourShareCents)}.`;
-  return `🧾 ${input.actorName} wants to add “${input.title}” (${formatBnd(input.amountBndCents)}) in ${input.groupName}. ${involvement}\nIt only counts once you confirm. Answer here: ${groupUrl(input.groupId)}`;
+  return `${input.actorName} wants to add “${input.title}” (${formatBnd(input.amountBndCents)}) in ${input.groupName}. ${involvement}\nIt only counts once you confirm. Answer here: ${groupUrl(input.groupId)}`;
 }
 
 export function expenseResolvedBody(input: {
@@ -166,20 +166,20 @@ export function expenseResolvedBody(input: {
   outcome: "confirmed" | "rejected" | "partial";
 }): string {
   if (input.outcome === "confirmed") {
-    return `✅ Everyone confirmed “${input.title}” in ${input.groupName}. It is now on the ledger.\n${groupUrl(input.groupId)}`;
+    return `Everyone confirmed “${input.title}” in ${input.groupName}. It is now on the ledger.\n${groupUrl(input.groupId)}`;
   }
   if (input.outcome === "rejected") {
-    return `⚠️ ${input.actorName} did not confirm “${input.title}” in ${input.groupName}, so it was not added to anyone's balance.\n${groupUrl(input.groupId)}`;
+    return `${input.actorName} did not confirm “${input.title}” in ${input.groupName}, so it was not added to anyone's balance.\n${groupUrl(input.groupId)}`;
   }
-  return `👍 ${input.actorName} confirmed “${input.title}” in ${input.groupName}. Still waiting on others.\n${groupUrl(input.groupId)}`;
+  return `${input.actorName} confirmed “${input.title}” in ${input.groupName}. Still waiting on others.\n${groupUrl(input.groupId)}`;
 }
 
 export function connectionRequestBody(input: { actorName: string }): string {
-  return `🤝 ${input.actorName} wants to connect with you on Vantage so you can share groups. Accept or ignore: ${connectionsUrl()}`;
+  return `${input.actorName} wants to connect with you on Vantage so you can share groups. Accept or ignore: ${connectionsUrl()}`;
 }
 
 export function connectionAcceptedBody(input: { actorName: string }): string {
-  return `✅ ${input.actorName} accepted your connection on Vantage. You can now invite each other to groups: ${connectionsUrl()}`;
+  return `${input.actorName} accepted your connection on Vantage. You can now invite each other to groups: ${connectionsUrl()}`;
 }
 
 export function poolCreatedBody(input: {
@@ -189,7 +189,7 @@ export function poolCreatedBody(input: {
   groupName: string;
   groupId: string;
 }): string {
-  return `🎯 ${input.actorName} started the pool “${input.title}” with a ${formatBnd(input.goalBndCents)} goal in ${input.groupName}.\nPledge here: ${groupUrl(input.groupId)}`;
+  return `${input.actorName} started the pool “${input.title}” with a ${formatBnd(input.goalBndCents)} goal in ${input.groupName}.\nPledge here: ${groupUrl(input.groupId)}`;
 }
 
 export function settlementMarkedBody(input: {
@@ -199,7 +199,7 @@ export function settlementMarkedBody(input: {
   groupId: string;
   rail: string;
 }): string {
-  return `💳 ${input.actorName} marked ${formatBnd(input.amountBndCents)} as paid to you via ${input.rail} for ${input.groupName}.\nConfirm or dispute it in Vantage: ${settleUrl(input.groupId)}`;
+  return `${input.actorName} marked ${formatBnd(input.amountBndCents)} as paid to you via ${input.rail} for ${input.groupName}.\nConfirm or dispute it in Vantage: ${settleUrl(input.groupId)}`;
 }
 
 export function settlementConfirmedBody(input: {
@@ -208,7 +208,7 @@ export function settlementConfirmedBody(input: {
   groupName: string;
   groupId: string;
 }): string {
-  return `✅ ${input.actorName} confirmed your ${formatBnd(input.amountBndCents)} payment for ${input.groupName}. You are square on that transfer.\nView: ${settleUrl(input.groupId)}`;
+  return `${input.actorName} confirmed your ${formatBnd(input.amountBndCents)} payment for ${input.groupName}. You are square on that transfer.\nView: ${settleUrl(input.groupId)}`;
 }
 
 export function settlementRejectedBody(input: {
@@ -217,7 +217,7 @@ export function settlementRejectedBody(input: {
   groupName: string;
   groupId: string;
 }): string {
-  return `⚠️ ${input.actorName} could not confirm your ${formatBnd(input.amountBndCents)} payment for ${input.groupName}. Check the payment details and try again: ${settleUrl(input.groupId)}`;
+  return `${input.actorName} could not confirm your ${formatBnd(input.amountBndCents)} payment for ${input.groupName}. Check the payment details and try again: ${settleUrl(input.groupId)}`;
 }
 
 export function reminderBody(input: {
@@ -227,7 +227,7 @@ export function reminderBody(input: {
   groupName: string;
   groupId: string;
 }): string {
-  return `👋 Friendly reminder from ${input.actorName}: you owe ${input.toName} ${formatBnd(input.amountBndCents)} for ${input.groupName}.\nSettle up here: ${settleUrl(input.groupId)}`;
+  return `Friendly reminder from ${input.actorName}: you owe ${input.toName} ${formatBnd(input.amountBndCents)} for ${input.groupName}.\nSettle up here: ${settleUrl(input.groupId)}`;
 }
 
 export function poolPledgeBody(input: {
@@ -239,8 +239,8 @@ export function poolPledgeBody(input: {
   received: boolean;
 }): string {
   return input.received
-    ? `✅ ${input.actorName} marked ${formatBnd(input.amountBndCents)} as handed over offline for “${input.poolTitle}” in ${input.groupName}.\nView pool: ${groupUrl(input.groupId)}`
-    : `💛 ${input.actorName} pledged ${formatBnd(input.amountBndCents)} to “${input.poolTitle}” in ${input.groupName}.\nView pool: ${groupUrl(input.groupId)}`;
+    ? `${input.actorName} marked ${formatBnd(input.amountBndCents)} as handed over offline for “${input.poolTitle}” in ${input.groupName}.\nView pool: ${groupUrl(input.groupId)}`
+    : `${input.actorName} pledged ${formatBnd(input.amountBndCents)} to “${input.poolTitle}” in ${input.groupName}.\nView pool: ${groupUrl(input.groupId)}`;
 }
 
 export function renderOutboxStatus(status: string): string {

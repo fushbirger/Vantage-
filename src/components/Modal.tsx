@@ -36,7 +36,7 @@ export function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-ink/35 p-0 backdrop-blur-sm sm:items-center sm:p-6"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0  sm:items-center sm:p-6"
       role="dialog"
       aria-modal="true"
       aria-label={title}
@@ -44,15 +44,15 @@ export function Modal({
         if (event.target === event.currentTarget) onClose();
       }}
     >
-      <div className="sheet-panel animate-pop">
+      <div className="sheet-panel ">
         <div className="mb-5 flex items-start gap-3">
           {icon && (
-            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-teal-100 text-teal-800">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-none bg-green-100 text-green-800">
               {icon}
             </span>
           )}
           <div className="min-w-0 flex-1">
-            <h2 className="font-display text-2xl font-semibold tracking-tight">
+            <h2 className=" text-2xl font-semibold ">
               {title}
             </h2>
             {subtitle && (
@@ -64,7 +64,7 @@ export function Modal({
           <button
             type="button"
             onClick={onClose}
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-muted transition hover:bg-line/60 hover:text-ink"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-none text-muted transition hover:bg-neutral-200 hover:text-black"
             aria-label="Close"
           >
             <X className="h-5 w-5" />

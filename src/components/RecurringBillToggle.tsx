@@ -58,7 +58,7 @@ export function RecurringBillToggle({
         )}
         {saving ? "Saving…" : active ? "Pause" : "Resume"}
       </button>
-      {error && <p className="mt-1 text-[10px] text-coral">{error}</p>}
+      {error && <p className="mt-1 text-[10px] text-red-600">{error}</p>}
     </div>
   );
 }

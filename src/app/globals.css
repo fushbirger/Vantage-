@@ -1,5 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap");
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -15,22 +13,12 @@
   }
 
   body {
-    @apply bg-paper text-ink antialiased;
-    background-image:
-      radial-gradient(55rem 28rem at 105% -10%, rgba(31, 138, 116, 0.13), transparent 60%),
-      radial-gradient(42rem 24rem at -15% 0%, rgba(238, 169, 15, 0.11), transparent 55%);
-    background-attachment: fixed;
+    @apply bg-white text-black antialiased;
   }
 
   ::selection {
-    background: #f8d477;
-    color: #0d2b2a;
-  }
-
-  h1,
-  h2,
-  h3 {
-    @apply font-display;
+    background: #000000;
+    color: #ffffff;
   }
 
   input,
@@ -42,75 +30,75 @@
 
 @layer components {
   .card {
-    @apply rounded-3xl border border-line bg-card shadow-soft;
+    @apply border border-line bg-white;
   }
 
   .card-flat {
-    @apply rounded-3xl border border-line bg-card;
+    @apply border border-line bg-white;
   }
 
   .btn {
-    @apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-teal-700 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-teal-800 active:scale-[0.985] disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex min-h-[44px] items-center justify-center gap-2 border border-green-700 bg-green-700 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-50;
   }
 
   .btn-secondary {
-    @apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full border border-teal-700/25 bg-white/70 px-4 py-2.5 text-sm font-bold text-teal-800 transition hover:border-teal-700/50 hover:bg-white active:scale-[0.985] disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex min-h-[44px] items-center justify-center gap-2 border border-black bg-white px-4 py-2.5 text-sm font-semibold text-black transition-colors hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-50;
   }
 
   .btn-ghost {
-    @apply inline-flex min-h-[40px] items-center justify-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold text-muted transition hover:bg-teal-50 hover:text-teal-800;
+    @apply inline-flex min-h-[40px] items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium text-black transition-colors hover:bg-neutral-100;
   }
 
   .btn-amber {
-    @apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-amber-400 px-5 py-2.5 text-sm font-bold text-ink transition hover:bg-amber-500 active:scale-[0.985] disabled:opacity-50;
+    @apply inline-flex min-h-[44px] items-center justify-center gap-2 border border-black bg-black px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-neutral-800 disabled:opacity-50;
   }
 
   .btn-danger {
-    @apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full border border-coral/30 bg-coral/5 px-4 py-2.5 text-sm font-bold text-coral transition hover:bg-coral/10;
+    @apply inline-flex min-h-[44px] items-center justify-center gap-2 border border-red-600 bg-white px-4 py-2.5 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50;
   }
 
   .field {
-    @apply w-full rounded-2xl border border-line bg-white px-4 py-3 text-base text-ink placeholder:text-muted/60 focus:border-teal-500 focus:outline-none focus:ring-4 focus:ring-teal-500/10;
+    @apply w-full border border-black/40 bg-white px-4 py-3 text-base text-black placeholder:text-muted/70 focus:border-green-700 focus:outline-none focus:ring-2 focus:ring-green-700/20;
   }
 
   .field-label {
-    @apply mb-1.5 block text-xs font-bold uppercase tracking-[0.14em] text-muted;
+    @apply mb-1.5 block text-xs font-semibold text-black;
   }
 
   .chip {
-    @apply inline-flex items-center gap-1.5 rounded-full border border-line bg-white/70 px-3 py-1 text-xs font-semibold text-muted;
+    @apply inline-flex items-center gap-1.5 border border-line bg-white px-3 py-1 text-xs font-medium text-black;
   }
 
   .chip-active {
-    @apply border-teal-600/30 bg-teal-50 text-teal-800;
+    @apply border-green-700 bg-green-50 text-green-800;
   }
 
   .pill {
-    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide;
+    @apply inline-flex items-center gap-1 border border-line bg-white px-2.5 py-1 text-[11px] font-semibold;
   }
 
   .section-title {
-    @apply font-display text-xl font-semibold tracking-tight text-ink sm:text-2xl;
+    @apply text-xl font-semibold text-black sm:text-2xl;
   }
 
   .stat {
-    @apply rounded-3xl border border-line bg-card p-4 sm:p-5;
+    @apply border border-line bg-white p-4 sm:p-5;
   }
 
   .stat-label {
-    @apply text-[11px] font-bold uppercase tracking-[0.16em] text-muted;
+    @apply text-[11px] font-medium text-muted;
   }
 
   .stat-value {
-    @apply mt-1 font-display text-xl font-semibold tabular-nums text-ink sm:text-2xl;
+    @apply mt-1 text-xl font-semibold tabular-nums text-black sm:text-2xl;
   }
 
   .divide-soft {
-    @apply divide-y divide-line/80;
+    @apply divide-y divide-line;
   }
 
   .linkish {
-    @apply font-semibold text-teal-700 underline decoration-teal-300 decoration-2 underline-offset-4 hover:text-teal-900;
+    @apply font-semibold text-green-700 underline hover:text-green-800;
   }
 
   .pb-safe {
@@ -118,15 +106,11 @@
   }
 
   .sheet-panel {
-    @apply max-h-[92dvh] w-full overflow-y-auto rounded-t-4xl border border-line bg-paper p-5 shadow-lift sm:max-w-2xl sm:rounded-4xl sm:p-6;
+    @apply max-h-[92dvh] w-full overflow-y-auto border border-line bg-white p-5 sm:max-w-2xl sm:p-6;
   }
 }
 
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
-
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
@@ -134,14 +118,5 @@
   .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
-  }
-
-  @keyframes shimmer {
-    0% {
-      background-position: -200% 0;
-    }
-    100% {
-      background-position: 200% 0;
-    }
   }
 }

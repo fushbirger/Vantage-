@@ -59,12 +59,14 @@ export function LoginScreen({ users }: { users: User[] }) {
 
   return (
     <main className="mx-auto grid min-h-dvh max-w-6xl items-center gap-10 px-5 py-8 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:px-10">
-      <section className="animate-rise">
-        <Logo />
-        <p className="mt-10 inline-flex items-center gap-2 rounded-full border border-amber-300/60 bg-amber-100/70 px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.14em] text-ink/75">
-          <Sparkles className="h-3.5 w-3.5" /> Made for Brunei
+      <section>
+        <div>
+          <Logo />
+        </div>
+        <p className="mt-10 inline-flex items-center gap-2 border border-line bg-white px-3 py-1.5 text-xs font-medium text-black">
+          Made for Brunei
         </p>
-        <h1 className="mt-5 max-w-xl text-balance font-display text-5xl font-semibold leading-[0.98] tracking-tight text-ink sm:text-6xl lg:text-7xl">
+        <h1 className="mt-5 max-w-xl text-2xl font-semibold leading-tight text-black">
           Split the bill.
           <br />
           Keep the friendship.
@@ -80,9 +82,9 @@ export function LoginScreen({ users }: { users: User[] }) {
             { icon: Sparkles, title: "Pairwise maths", text: "One net figure per pair" },
             { icon: ShieldCheck, title: "Non-custodial", text: "No wallet, no float" },
           ].map(({ icon: Icon, title, text }) => (
-            <div key={title} className="rounded-2xl border border-line bg-white/60 p-3.5">
-              <Icon className="h-4.5 w-4.5 text-teal-700" />
-              <p className="mt-2 text-sm font-bold">{title}</p>
+            <div key={title} className="border border-line bg-white p-3.5">
+              <Icon className="h-4 w-4 text-green-700" />
+              <p className="mt-2 text-sm font-semibold">{title}</p>
               <p className="text-xs text-muted">{text}</p>
             </div>
           ))}
@@ -94,16 +96,16 @@ export function LoginScreen({ users }: { users: User[] }) {
         </p>
       </section>
 
-      <section className="animate-rise rounded-4xl border border-line bg-card p-5 shadow-lift sm:p-7">
-        <div className="mb-5 flex rounded-full border border-line bg-paper p-1">
+      <section className="border border-line bg-white p-5 sm:p-7">
+        <div className="mb-5 flex border border-line">
           <button
             type="button"
             onClick={() => {
               setMode("signin");
               setError("");
             }}
-            className={`flex-1 rounded-full px-4 py-2 text-sm font-bold transition ${
-              mode === "signin" ? "bg-white text-ink shadow-soft" : "text-muted"
+            className={`flex-1 border-r border-line px-4 py-2 text-sm font-semibold transition ${
+              mode === "signin" ? "bg-black text-white" : "bg-white text-black"
             }`}
           >
             Demo sign in
@@ -114,8 +116,8 @@ export function LoginScreen({ users }: { users: User[] }) {
               setMode("register");
               setError("");
             }}
-            className={`flex-1 rounded-full px-4 py-2 text-sm font-bold transition ${
-              mode === "register" ? "bg-white text-ink shadow-soft" : "text-muted"
+            className={`flex-1 px-4 py-2 text-sm font-semibold transition ${
+              mode === "register" ? "bg-black text-white" : "bg-white text-black"
             }`}
           >
             New account
@@ -123,7 +125,7 @@ export function LoginScreen({ users }: { users: User[] }) {
         </div>
 
         {error && (
-          <p className="mb-4 rounded-2xl border border-coral/25 bg-coral/5 px-3.5 py-2.5 text-sm font-semibold text-coral">
+          <p className="mb-4 rounded-none border border-red-600/40 bg-red-50 px-3.5 py-2.5 text-sm font-semibold text-red-600">
             {error}
           </p>
         )}
@@ -141,7 +143,7 @@ export function LoginScreen({ users }: { users: User[] }) {
                   type="button"
                   onClick={() => signIn(user.id)}
                   disabled={loading !== null}
-                  className="flex w-full items-center gap-3 rounded-2xl border border-line bg-white/60 p-3 text-left transition hover:border-teal-600/30 hover:bg-teal-50/60 disabled:opacity-60"
+                  className="flex w-full items-center gap-3 border border-line bg-white p-3 text-left transition hover:border-green-700 disabled:opacity-60"
                 >
                   <Avatar name={user.name} color={user.avatarColor} />
                   <span className="min-w-0 flex-1">
@@ -153,14 +155,14 @@ export function LoginScreen({ users }: { users: User[] }) {
                       {user.phone ? ` · ${user.phone}` : ""}
                     </span>
                   </span>
-                  <ArrowRight className="h-4 w-4 text-teal-700" />
+                  <ArrowRight className="h-4 w-4 text-green-700" />
                 </button>
               ))}
             </div>
-            <p className="mt-4 rounded-2xl bg-paper px-3.5 py-3 text-xs leading-relaxed text-muted">
-              Tip: sign in as <strong className="text-ink">Aiman</strong> to see
+            <p className="mt-4 border border-line bg-neutral-50 px-3.5 py-3 text-xs leading-relaxed text-muted">
+              Tip: sign in as <strong className="text-black">Aiman</strong> to see
               the Miri road-trip debts. Then switch to{" "}
-              <strong className="text-ink">Nurul</strong> to confirm a payment.
+              <strong className="text-black">Nurul</strong> to confirm a payment.
             </p>
           </div>
         ) : (

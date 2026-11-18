@@ -17,7 +17,7 @@ export function initials(name: string): string {
 
 export function Avatar({
   name,
-  color,
+  color: _color,
   size = "md",
   ring = false,
   className = "",
@@ -31,8 +31,7 @@ export function Avatar({
   return (
     <span
       title={name}
-      className={`inline-flex shrink-0 items-center justify-center rounded-full font-bold text-white ${SIZES[size]} ${ring ? "ring-2 ring-card" : ""} ${className}`}
-      style={{ backgroundColor: color }}
+      className={`inline-flex shrink-0 items-center justify-center rounded-full bg-black font-bold text-white ${SIZES[size]} ${ring ? "ring-2 ring-white" : ""} ${className}`}
       aria-label={name}
     >
       {initials(name)}
@@ -50,18 +49,17 @@ export function AvatarStack({
   const visible = members.slice(0, max);
   const extra = members.length - visible.length;
   return (
-    <div className="flex -space-x-2" aria-label={`${members.length} members`}>
+    <div className="flex space-x-1.5" aria-label={`${members.length} members`}>
       {visible.map((member) => (
         <Avatar
           key={member.userId}
           name={member.name}
           color={member.avatarColor}
           size="sm"
-          ring
         />
       ))}
       {extra > 0 && (
-        <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-teal-900 text-[11px] font-bold text-white ring-2 ring-card">
+        <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-black text-[11px] font-bold text-white ring-2 ring-white">
           +{extra}
         </span>
       )}

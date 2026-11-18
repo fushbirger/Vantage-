@@ -61,7 +61,7 @@ export function AddConnectionForm() {
       </div>
       {message && (
         <p
-          className={`mt-2 text-xs font-semibold ${message.ok ? "text-teal-700" : "text-coral"}`}
+          className={`mt-2 text-xs font-semibold ${message.ok ? "text-green-700" : "text-red-600"}`}
         >
           {message.text}
         </p>
@@ -145,7 +145,7 @@ export function ConnectionButtons({
           </button>
         )}
       </div>
-      {error && <p className="text-[11px] font-semibold text-coral">{error}</p>}
+      {error && <p className="text-[11px] font-semibold text-red-600">{error}</p>}
     </div>
   );
 }

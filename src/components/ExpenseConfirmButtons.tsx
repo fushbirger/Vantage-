@@ -70,7 +70,7 @@ export function ExpenseConfirmButtons({
           </button>
         )}
       </div>
-      {error && <p className="mt-1.5 text-xs font-semibold text-coral">{error}</p>}
+      {error && <p className="mt-1.5 text-xs font-semibold text-red-600">{error}</p>}
     </div>
   );
 }
