@@ -132,6 +132,11 @@ export function seedDatabase(db: Database.Database): void {
     insertProfile.run(id, userId, rail, proxy, qr, pocket, now - 10 * DAY);
   }
 
+  // Dayang is kept out of `users` on purpose: she is not on the Miri trip, so
+  // she shows how connection requests and group invitations look to a newcomer.
+  insertUser.run("usr_dayang", "dayang", "Dayang", "+6738678901", "#a65d57", now - 2 * DAY);
+  insertProfile.run("prof_dayang", "usr_dayang", "tarus", "+6738678901", null, null, now - 2 * DAY);
+
   const insertGroup = db.prepare(
     `INSERT INTO "groups" (id, name, emoji, kind, description, created_by, created_at)
      VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -186,6 +191,28 @@ export function seedDatabase(db: Database.Database): void {
   memberships.forEach(([groupId, userId, role], i) => {
     insertMember.run(`gm_${groupId}_${userId}`, groupId, userId, role, now - 5 * DAY + i);
   });
+
+  // Account connections. The five regulars are all connected with each other;
+  // Dayang is connected to Nurul and has a request waiting for Aiman.
+  const insertConnection = db.prepare(
+    `INSERT INTO connections (id, requester_id, addressee_id, status, created_at, responded_at)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+  );
+  const regulars = users.map(([id]) => id);
+  regulars.forEach((a, i) => {
+    regulars.slice(i + 1).forEach((b) => {
+      insertConnection.run(`con_${a}_${b}`, a, b, "accepted", now - 20 * DAY, now - 20 * DAY);
+    });
+  });
+  insertConnection.run("con_nurul_dayang", "usr_nurul", "usr_dayang", "accepted", now - 2 * DAY, now - 2 * DAY);
+  insertConnection.run("con_dayang_aiman", "usr_dayang", "usr_aiman", "pending", now - 1 * DAY, null);
+
+  // Nurul invited Dayang to Friday Dinner. She has not accepted, so she sees
+  // nothing of the ledger and cannot be put in an expense.
+  db.prepare(
+    `INSERT INTO group_members (id, group_id, user_id, role, joined_at, status, invited_by)
+     VALUES (?, ?, ?, 'member', ?, 'invited', ?)`,
+  ).run("gm_grp_dinner_usr_dayang", "grp_dinner", "usr_dayang", now - 1 * DAY, "usr_nurul");
 
   const insertExpense = db.prepare(
     `INSERT INTO expenses
@@ -354,6 +381,35 @@ export function seedDatabase(db: Database.Database): void {
     notes: "Friday rotation.",
     spentAt: now - 9 * DAY,
   });
+
+  // Hakim logged a dessert stop that touches Aiman and Sofia. It waits for their
+  // confirmations, so it is not in anyone's balance yet.
+  addExpense({
+    id: "exp_ice_cream",
+    groupId: "grp_miri",
+    paidBy: "usr_hakim",
+    title: "Ice cream — Pelita Mall",
+    category: "food",
+    amountCents: 1800,
+    currency: "BND",
+    rule: "equal",
+    participants: [
+      { userId: "usr_aiman" },
+      { userId: "usr_hakim" },
+      { userId: "usr_sofia" },
+    ],
+    spentAt: now - 6 * 3_600_000,
+  });
+  db.exec("UPDATE expenses SET created_by = paid_by WHERE created_by IS NULL");
+  db.prepare(
+    "UPDATE expenses SET status = 'pending', resolved_at = NULL WHERE id = 'exp_ice_cream'",
+  ).run();
+  const insertConfirmation = db.prepare(
+    `INSERT INTO expense_confirmations (id, expense_id, user_id, status, responded_at)
+     VALUES (?, 'exp_ice_cream', ?, 'pending', NULL)`,
+  );
+  insertConfirmation.run("ec_ice_cream_aiman", "usr_aiman");
+  insertConfirmation.run("ec_ice_cream_sofia", "usr_sofia");
 
   const insertSettlement = db.prepare(
     `INSERT INTO settlements

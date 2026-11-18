@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import {
   Inbox,
+  Link2,
   LogOut,
   ShieldCheck,
   UserRound,
@@ -22,6 +23,7 @@ interface ShellUser {
 
 const NAV = [
   { href: "/groups", label: "Groups", icon: UsersRound },
+  { href: "/connections", label: "People", icon: Link2 },
   { href: "/activity", label: "Activity", icon: Inbox },
   { href: "/account", label: "Account", icon: UserRound },
 ];
@@ -29,15 +31,24 @@ const NAV = [
 export function AppShell({
   user,
   unread,
+  peopleBadge = 0,
+  groupsBadge = 0,
   children,
 }: {
   user: ShellUser;
   unread: number;
+  /** Connection requests waiting for me. */
+  peopleBadge?: number;
+  /** Group invitations waiting for me. */
+  groupsBadge?: number;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
   const router = useRouter();
   const [signingOut, setSigningOut] = useState(false);
+
+  const badgeFor = (href: string) =>
+    href === "/activity" ? unread : href === "/connections" ? peopleBadge : href === "/groups" ? groupsBadge : 0;
 
   const isActive = (href: string) =>
     href === "/groups" ? pathname.startsWith("/groups") : pathname === href;
@@ -92,13 +103,13 @@ export function AppShell({
               >
                 <Icon className="h-[18px] w-[18px]" />
                 {item.label}
-                {item.href === "/activity" && unread > 0 && (
+                {badgeFor(item.href) > 0 && (
                   <span
                     className={`ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] ${
                       active ? "bg-white/20 text-white" : "bg-coral text-white"
                     }`}
                   >
-                    {unread}
+                    {badgeFor(item.href)}
                   </span>
                 )}
               </Link>
@@ -147,7 +158,7 @@ export function AppShell({
               <Link
                 key={item.href}
                 href={item.href}
-                className={`relative flex min-w-[72px] flex-col items-center gap-0.5 rounded-2xl px-3 py-2 text-[11px] font-bold transition ${
+                className={`relative flex min-w-[64px] flex-col items-center gap-0.5 rounded-2xl px-3 py-2 text-[11px] font-bold transition ${
                   active ? "text-teal-800" : "text-muted"
                 }`}
               >
@@ -157,7 +168,7 @@ export function AppShell({
                   }`}
                 >
                   <Icon className="h-5 w-5" />
-                  {item.href === "/activity" && unread > 0 && (
+                  {badgeFor(item.href) > 0 && (
                     <span className="absolute right-4 top-1 h-2 w-2 rounded-full bg-coral" />
                   )}
                 </span>

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { readJson, withUser } from "@/lib/api";
 import { CURRENCIES, convertToBndCents } from "@/lib/currency";
 import { addExpense, getGroup, getGroupMembers, isGroupMember } from "@/lib/queries";
+import { requiredConfirmers } from "@/lib/confirmation";
 import { notifyTargets, notificationTargets } from "@/lib/notify";
 import { computeSplits, SplitError } from "@/lib/split";
 import {
@@ -15,7 +16,7 @@ import {
   optionalText,
   text,
 } from "@/lib/validation";
-import { expenseAddedBody } from "@/lib/wa";
+import { expenseAddedBody, expenseConfirmRequestBody } from "@/lib/wa";
 
 interface ParticipantBody {
   userId: string;
@@ -84,6 +85,18 @@ export async function POST(
     const rawParticipants = Array.isArray(body.participants)
       ? (body.participants as ParticipantBody[])
       : [];
+    // Refuse, rather than silently drop, anyone who is not an active member:
+    // people who were only invited (or are strangers) cannot be put in a split.
+    if (
+      rawParticipants.some(
+        (p) => !p || typeof p.userId !== "string" || !memberIds.has(p.userId),
+      )
+    ) {
+      return NextResponse.json(
+        { error: "Everyone in the split must be an active member of the group." },
+        { status: 400 },
+      );
+    }
     const participants = rawParticipants
       .filter(
         (participant) =>
@@ -139,8 +152,19 @@ export async function POST(
           )
       : [];
 
+    // Multi-side confirmation: when the group requires it, everyone the expense
+    // touches (payer and split members other than the author) must say yes
+    // before it reaches the ledger.
+    const confirmerIds = group.requireConfirmation
+      ? requiredConfirmers({
+          createdBy: user.id,
+          paidBy,
+          participantIds: splits.map((split) => split.userId),
+        })
+      : [];
+
     const expenseId = `exp_${crypto.randomUUID()}`;
-    addExpense({
+    const status = addExpense({
       id: expenseId,
       groupId,
       paidBy,
@@ -155,13 +179,17 @@ export async function POST(
       itemsJson: items.length ? JSON.stringify(items) : null,
       notes,
       spentAt,
+      createdBy: user.id,
+      confirmerIds,
       splits,
     });
 
     const splitMap = new Map(
       splits.map((split) => [split.userId, split.amountBndCents]),
     );
-    const targetIds = new Set(splits.map((split) => split.userId));
+    const targetIds = new Set(
+      status === "pending" ? confirmerIds : splits.map((split) => split.userId),
+    );
     const targets = notificationTargets(groupId, user.id).filter((target) =>
       targetIds.has(target.userId),
     );
@@ -170,16 +198,26 @@ export async function POST(
     try {
       notified = await notifyTargets(targets, {
         groupId,
-        template: "expense_added",
+        template: status === "pending" ? "expense_confirm_request" : "expense_added",
         body: (target) =>
-          expenseAddedBody({
-            actorName: user.name,
-            title,
-            amountBndCents,
-            groupName: group.name,
-            groupId,
-            yourShareCents: splitMap.get(target.userId) ?? 0,
-          }),
+          status === "pending"
+            ? expenseConfirmRequestBody({
+                actorName: user.name,
+                title,
+                amountBndCents,
+                groupName: group.name,
+                groupId,
+                yourShareCents: splitMap.get(target.userId) ?? 0,
+                paidByYou: paidBy === target.userId,
+              })
+            : expenseAddedBody({
+                actorName: user.name,
+                title,
+                amountBndCents,
+                groupName: group.name,
+                groupId,
+                yourShareCents: splitMap.get(target.userId) ?? 0,
+              }),
       });
     } catch (error) {
       console.error("WhatsApp expense notification failed", error);
@@ -189,6 +227,8 @@ export async function POST(
       {
         ok: true,
         expenseId,
+        status,
+        awaitingConfirmationFrom: confirmerIds,
         amountBndCents,
         splits,
         notified,

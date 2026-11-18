@@ -179,8 +179,15 @@ export function CreateGroupButton({
 
           <div>
             <span className="field-label">
-              Members <span className="normal-case tracking-normal">— you are included automatically</span>
+              Invite connections <span className="normal-case tracking-normal">— they join once they accept</span>
             </span>
+            {users.filter((person) => person.id !== currentUserId).length === 0 && (
+              <p className="rounded-2xl bg-paper p-3 text-xs leading-relaxed text-muted">
+                You can only invite people you are connected with. Add friends on
+                the People page first, or start the group on your own and invite
+                them later.
+              </p>
+            )}
             <div className="max-h-56 space-y-2 overflow-y-auto pr-1">
               {users
                 .filter((person) => person.id !== currentUserId)

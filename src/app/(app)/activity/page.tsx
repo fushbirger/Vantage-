@@ -11,6 +11,8 @@ import {
   Webhook,
 } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
+import { ExpenseConfirmButtons } from "@/components/ExpenseConfirmButtons";
+import { getExpensesAwaitingUser } from "@/lib/collab";
 import { RetryMessageButton } from "@/components/RetryMessageButton";
 import { formatBnd } from "@/lib/currency";
 import { relativeTime } from "@/lib/dates";
@@ -34,6 +36,7 @@ export default async function ActivityPage() {
 
   const messages = getActivityForUser(user.id);
   const pending = getPendingSettlementsForUser(user.id);
+  const expensesAwaiting = getExpensesAwaitingUser(user.id);
   const integration = integrationStatus();
   const awaitingMe = pending.filter(
     (settlement) => settlement.toUser === user.id,
@@ -79,6 +82,38 @@ export default async function ActivityPage() {
 
       <div className="grid gap-5 lg:grid-cols-[1.5fr_1fr]">
         <div className="min-w-0 space-y-5">
+          {expensesAwaiting.length > 0 && (
+            <section className="card p-5">
+              <h2 className="section-title flex items-center gap-2">
+                <BellRing className="h-4 w-4 text-coral" /> Needs your yes
+              </h2>
+              <p className="mt-1 text-xs text-muted">
+                Someone added these expenses on your behalf. They only count
+                once you confirm.
+              </p>
+              <div className="mt-3 space-y-2.5">
+                {expensesAwaiting.map((expense) => (
+                  <div
+                    key={expense.id}
+                    className="rounded-2xl border border-amber-300/60 bg-amber-100/40 p-3"
+                  >
+                    <p className="text-sm font-bold">
+                      {expense.title} · {formatBnd(expense.amountBndCents)}
+                    </p>
+                    <p className="mb-2.5 mt-0.5 text-[11px] text-muted">
+                      {expense.groupEmoji} {expense.groupName} · added by{" "}
+                      {expense.creatorName} ·{" "}
+                      {expense.paidByYou
+                        ? "it says you paid"
+                        : `your share ${formatBnd(expense.yourShareCents)}`}
+                    </p>
+                    <ExpenseConfirmButtons expenseId={expense.id} mode="answer" compact />
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
           {awaitingMe.length > 0 && (
             <section className="card p-5">
               <h2 className="section-title flex items-center gap-2">

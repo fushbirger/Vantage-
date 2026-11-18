@@ -13,7 +13,9 @@ import { CreateGroupButton } from "@/components/CreateGroupButton";
 import { formatBnd, formatPosition } from "@/lib/currency";
 import { relativeTime } from "@/lib/dates";
 import { KIND_LABELS } from "@/lib/display";
-import { getGroupSummariesForUser, getUsers } from "@/lib/queries";
+import { getConnectedUsers, getGroupInvitesForUser } from "@/lib/collab";
+import { InviteResponseButtons } from "@/components/InviteResponseButtons";
+import { getGroupSummariesForUser } from "@/lib/queries";
 import { getCurrentUser } from "@/lib/session";
 
 export const metadata = { title: "Your groups" };
@@ -23,7 +25,9 @@ export default async function GroupsPage() {
   if (!user) redirect("/login");
 
   const summaries = getGroupSummariesForUser(user.id);
-  const people = getUsers();
+  // Only accepted connections can be invited to a new group.
+  const people = getConnectedUsers(user.id);
+  const invites = getGroupInvitesForUser(user.id);
   const net = summaries.reduce((sum, group) => sum + group.myBalanceCents, 0);
   const total = summaries.reduce((sum, group) => sum + group.totalCents, 0);
 
@@ -55,6 +59,33 @@ export default async function GroupsPage() {
           currentUserId={user.id}
         />
       </header>
+
+      {invites.length > 0 && (
+        <section className="card border-amber-300/60 bg-amber-100/30 p-5">
+          <h2 className="section-title">Group invitations</h2>
+          <p className="mt-1 text-xs text-muted">
+            You are not in these groups yet. Nothing is added to your ledger
+            until you accept.
+          </p>
+          <div className="divide-soft mt-2">
+            {invites.map((invite) => (
+              <div key={invite.groupId} className="flex items-center gap-3 py-3">
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-paper text-lg">
+                  {invite.groupEmoji}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-bold">{invite.groupName}</p>
+                  <p className="text-[11px] text-muted">
+                    invited by {invite.invitedByName ?? "someone"} ·{" "}
+                    {relativeTime(invite.invitedAt)}
+                  </p>
+                </div>
+                <InviteResponseButtons groupId={invite.groupId} />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <div className="stat">
