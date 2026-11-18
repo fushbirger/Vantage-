@@ -77,7 +77,7 @@ export function LoginScreen({ users }: { users: User[] }) {
         <div className="mt-8 grid max-w-lg gap-3 sm:grid-cols-3">
           {[
             { icon: UsersRound, title: "Group ledger", text: "Trips, dinners, gifts" },
-            { icon: Sparkles, title: "Smart simplify", text: "Fewer transfers" },
+            { icon: Sparkles, title: "Pairwise maths", text: "One net figure per pair" },
             { icon: ShieldCheck, title: "Non-custodial", text: "No wallet, no float" },
           ].map(({ icon: Icon, title, text }) => (
             <div key={title} className="rounded-2xl border border-line bg-white/60 p-3.5">

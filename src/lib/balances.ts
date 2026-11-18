@@ -1,4 +1,7 @@
-import type { NetBalance } from "./simplify";
+export interface NetBalance {
+  userId: string;
+  amountCents: number;
+}
 
 export interface ExpenseLite {
   paidBy: string;

@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import {
   ArrowLeft,
   ArrowRight,
+  CalendarClock,
   CalendarDays,
   CheckCircle2,
   ChevronDown,
@@ -25,6 +26,8 @@ import {
   InviteMembersButton,
 } from "@/components/InviteMembersButton";
 import { PledgeButton } from "@/components/PledgeButton";
+import { RecurringBillToggle } from "@/components/RecurringBillToggle";
+import { RepaymentCard } from "@/components/RepaymentCard";
 import { ShareWhatsAppButton } from "@/components/ShareWhatsAppButton";
 import {
   formatBnd,
@@ -417,7 +420,7 @@ export default async function GroupPage({
                 </h2>
                 <p className="mt-0.5 text-xs text-muted">
                   {ledger.transfers.length
-                    ? `${ledger.transfers.length} simplified transfer${ledger.transfers.length === 1 ? "" : "s"} clears the whole group`
+                    ? `${ledger.transfers.length} direct transfer${ledger.transfers.length === 1 ? "" : "s"} nets every pair`
                     : "Everyone is square"}
                 </p>
               </div>
@@ -555,6 +558,47 @@ export default async function GroupPage({
             <div className="mb-3 flex items-end justify-between gap-3">
               <div>
                 <h2 className="section-title flex items-center gap-2">
+                  <Handshake className="h-4 w-4 text-teal-700" /> Repayments
+                </h2>
+                <p className="mt-0.5 text-xs text-muted">
+                  Open contributions or an equal split, capped at the target
+                </p>
+              </div>
+              <CreateRepaymentButton
+                groupId={ledger.group.id}
+                members={ledger.members.map((member) => ({
+                  userId: member.userId,
+                  name: member.name,
+                  avatarColor: member.avatarColor,
+                }))}
+              />
+            </div>
+
+            <div className="space-y-2.5">
+              {ledger.repayments.map((repayment) => (
+                <RepaymentCard
+                  key={repayment.id}
+                  repayment={repayment}
+                  currentUserId={user.id}
+                />
+              ))}
+              {ledger.repayments.length === 0 && (
+                <div className="card flex flex-col items-center px-6 py-8 text-center">
+                  <span className="text-2xl">🤝</span>
+                  <p className="mt-2 text-sm font-bold">No repayments yet</p>
+                  <p className="mt-1 max-w-xs text-xs text-muted">
+                    Start one when a group needs to collect toward a single
+                    amount. Anyone can chip in, or you can split it equally.
+                  </p>
+                </div>
+              )}
+            </div>
+          </section>
+
+          <section>
+            <div className="mb-3 flex items-end justify-between gap-3">
+              <div>
+                <h2 className="section-title flex items-center gap-2">
                   <Receipt className="h-4 w-4 text-teal-700" /> Expenses
                 </h2>
                 <p className="mt-0.5 text-xs text-muted">
@@ -605,7 +649,7 @@ export default async function GroupPage({
                   <Target className="h-4 w-4 text-teal-700" /> Money pools
                 </h2>
                 <p className="mt-0.5 text-xs text-muted">
-                  Pledges only — no cash held here
+                  Open contributions, capped at the goal — no cash held here
                 </p>
               </div>
               <CreatePoolButton groupId={ledger.group.id} />
@@ -614,8 +658,12 @@ export default async function GroupPage({
             <div className="mt-4 space-y-4">
               {ledger.pools.map((pool) => {
                 const progress = pct(pool.pledgedCents, pool.goalBndCents);
-                const myPledge = pool.pledges.find(
+                const myContributions = pool.pledges.filter(
                   (pledge) => pledge.userId === user.id,
+                );
+                const myContributedCents = myContributions.reduce(
+                  (sum, pledge) => sum + pledge.amountBndCents,
+                  0,
                 );
                 return (
                   <div
@@ -632,8 +680,14 @@ export default async function GroupPage({
                             : ""}
                         </p>
                       </div>
-                      <span className="pill bg-amber-100 text-ink/75">
-                        {Math.round(progress)}%
+                      <span
+                        className={`pill ${
+                          pool.fulfilled
+                            ? "bg-teal-100 text-teal-800"
+                            : "bg-amber-100 text-ink/75"
+                        }`}
+                      >
+                        {pool.fulfilled ? "Fulfilled" : `${Math.round(progress)}%`}
                       </span>
                     </div>
 
@@ -645,12 +699,18 @@ export default async function GroupPage({
                     </div>
                     <div className="mt-1.5 flex items-center justify-between text-[11px] font-semibold">
                       <span className="tabular-nums text-teal-800">
-                        {formatBnd(pool.pledgedCents)} pledged
+                        {formatBnd(pool.pledgedCents)} contributed
                       </span>
                       <span className="tabular-nums text-muted">
                         of {formatBnd(pool.goalBndCents)}
                       </span>
                     </div>
+
+                    {!pool.fulfilled && (
+                      <p className="mt-1 text-[11px] text-muted">
+                        {formatBnd(pool.remainingCents)} left to reach the cap.
+                      </p>
+                    )}
 
                     {pool.receivedCents > 0 && (
                       <p className="mt-1 text-[11px] text-muted">
@@ -668,31 +728,66 @@ export default async function GroupPage({
                     <div className="mt-3 flex items-center justify-between gap-2">
                       <div className="flex items-center gap-1.5">
                         <AvatarStack
-                          members={pool.pledges.map((pledge) => ({
-                            userId: pledge.userId,
-                            name: pledge.userName,
-                            avatarColor: pledge.userColor,
-                          }))}
+                          members={Array.from(
+                            new Map(
+                              pool.pledges.map((pledge) => [
+                                pledge.userId,
+                                {
+                                  userId: pledge.userId,
+                                  name: pledge.userName,
+                                  avatarColor: pledge.userColor,
+                                },
+                              ]),
+                            ).values(),
+                          )}
                           max={4}
                         />
                         <span className="text-[11px] font-semibold text-muted">
-                          {pool.pledges.length} pledged
+                          {pool.contributorCount} contributor
+                          {pool.contributorCount === 1 ? "" : "s"}
                         </span>
                       </div>
                       <PledgeButton
                         poolId={pool.id}
                         poolTitle={pool.title}
-                        existingAmount={myPledge?.amountBndCents ?? null}
-                        existingStatus={myPledge?.status ?? null}
+                        remainingCents={pool.remainingCents}
+                        fulfilled={pool.fulfilled}
+                        myContributedCents={myContributedCents}
                       />
                     </div>
 
-                    {myPledge && (
+                    {pool.pledges.length > 0 && (
+                      <div className="mt-2 space-y-1">
+                        {pool.pledges.slice(0, 4).map((pledge) => (
+                          <p
+                            key={pledge.id}
+                            className="flex items-center justify-between rounded-xl bg-white/60 px-2.5 py-1.5 text-[11px]"
+                          >
+                            <span className="font-semibold">
+                              {pledge.userId === user.id ? "You" : pledge.userName}
+                              <span className="ml-1 font-normal text-muted">
+                                {pledge.status === "received"
+                                  ? "· handed over"
+                                  : "· pledged"}
+                              </span>
+                            </span>
+                            <span className="font-bold tabular-nums text-teal-800">
+                              {formatBnd(pledge.amountBndCents)}
+                            </span>
+                          </p>
+                        ))}
+                        {pool.pledges.length > 4 && (
+                          <p className="px-1 text-[10px] text-muted">
+                            +{pool.pledges.length - 4} more contributions
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {myContributedCents > 0 && (
                       <p className="mt-2 rounded-xl bg-teal-50 px-2.5 py-1.5 text-[11px] font-semibold text-teal-800">
-                        You pledged {formatBnd(myPledge.amountBndCents)} ·{" "}
-                        {myPledge.status === "received"
-                          ? "handed over offline"
-                          : "still pledged"}
+                        You have contributed {formatBnd(myContributedCents)} in
+                        total.
                       </p>
                     )}
                   </div>
@@ -707,6 +802,66 @@ export default async function GroupPage({
                     moving money into Vantage.
                   </p>
                 </div>
+              )}
+            </div>
+          </section>
+
+          <section className="card p-5">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2 className="section-title flex items-center gap-2">
+                  <CalendarClock className="h-4 w-4 text-teal-700" /> Monthly
+                  bills
+                </h2>
+                <p className="mt-0.5 text-xs text-muted">
+                  Auto-posted from database dates
+                </p>
+              </div>
+              <CreateRecurringBillButton
+                groupId={ledger.group.id}
+                currentUserId={user.id}
+                members={ledger.members.map((member) => ({
+                  userId: member.userId,
+                  name: member.name,
+                  avatarColor: member.avatarColor,
+                }))}
+              />
+            </div>
+
+            <div className="mt-4 space-y-2">
+              {ledger.recurringBills.map((bill) => (
+                <div
+                  key={bill.id}
+                  className="flex items-center gap-2 rounded-2xl border border-line bg-paper/60 p-2.5"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-bold">
+                      {bill.title}
+                      {!bill.active && (
+                        <span className="ml-1.5 pill bg-paper text-muted">
+                          Paused
+                        </span>
+                      )}
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-muted">
+                      {formatBnd(bill.amountBndCents)} · day {bill.dayOfMonth} ·{" "}
+                      {bill.active
+                        ? `next ${formatDate(bill.nextRunAt)}`
+                        : "not posting"}
+                    </p>
+                  </div>
+                  <RecurringBillToggle
+                    billId={bill.id}
+                    active={bill.active === 1}
+                    canManage={bill.createdBy === user.id}
+                  />
+                </div>
+              ))}
+              {ledger.recurringBills.length === 0 && (
+                <p className="rounded-2xl border border-dashed border-line px-3 py-4 text-center text-[11px] text-muted">
+                  No scheduled bills. Rent, subscriptions and utilities can post
+                  themselves each month.
+                </p>
               )}
             </div>
           </section>
@@ -811,9 +966,9 @@ export default async function GroupPage({
                 {activePool.title}
               </p>
               <p className="mt-1 text-xs leading-relaxed text-ink/65">
-                {formatBnd(activePool.goalBndCents - activePool.pledgedCents)} to
-                go. Pledges are tracked here, then paid directly to whoever is
-                buying the gift.
+                {activePool.fulfilled
+                  ? "Fully funded. The cash was handed over outside Vantage."
+                  : `${formatBnd(activePool.remainingCents)} to go. Contributions are tracked here, then paid directly to whoever is buying the gift.`}
               </p>
             </section>
           )}

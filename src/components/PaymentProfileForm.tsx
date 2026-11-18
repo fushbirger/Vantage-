@@ -28,13 +28,13 @@ const RAILS: Array<{
   {
     value: "tarusqr",
     label: "tarusQR",
-    description: "Static or dynamic QR image",
+    description: "Upload one static QR image",
     icon: QrCode,
   },
   {
     value: "pocket",
     label: "Pocket",
-    description: "Merchant or user QR link",
+    description: "Static QR image or payment link",
     icon: CreditCard,
   },
 ];
@@ -171,7 +171,11 @@ export function PaymentProfileForm({
       </div>
 
       <div>
-        <span className="field-label">tarusQR image</span>
+        <span className="field-label">Static QR image (tarusQR or Pocket)</span>
+        <p className="mb-2 text-[11px] leading-relaxed text-muted">
+          Upload your Pocket or tarusQR screenshot once. Vantage never generates
+          a dynamic payment QR — it only shows the image you saved.
+        </p>
         {qr ? (
           <div className="flex items-center gap-3 rounded-2xl border border-line bg-white/60 p-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -198,7 +202,7 @@ export function PaymentProfileForm({
         ) : (
           <label className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-line bg-white/40 px-4 py-4 text-sm font-semibold text-muted transition hover:border-teal-400 hover:text-teal-800">
             <Upload className="h-4 w-4" />
-            {uploading ? "Processing…" : "Upload your tarusQR image"}
+            {uploading ? "Processing…" : "Upload your static QR image"}
             <input
               type="file"
               accept="image/*"

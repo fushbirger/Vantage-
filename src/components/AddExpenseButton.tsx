@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import {
   Camera,
   ChevronDown,
+  Loader2,
   Plus,
   Receipt,
+  ScanLine,
   Sparkles,
   Trash2,
   UsersRound,
@@ -25,7 +27,11 @@ import { computeSplits, SplitError } from "@/lib/split";
 import { CATEGORY_META } from "@/lib/display";
 import { CATEGORIES } from "@/lib/validation";
 import { dateInputToMs, todayInputValue } from "@/lib/dates";
-import type { CurrencyCode, SplitRule } from "@/lib/types";
+import type {
+  CurrencyCode,
+  ScannedReceipt,
+  SplitRule,
+} from "@/lib/types";
 
 interface MemberOption {
   userId: string;
@@ -83,6 +89,9 @@ export function AddExpenseButton({
   const [receipt, setReceipt] = useState<string | null>(null);
   const [receiptKb, setReceiptKb] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [scanNote, setScanNote] = useState("");
+  const [aiFilled, setAiFilled] = useState(false);
   const [items, setItems] = useState<ItemRow[]>([]);
   const [showItems, setShowItems] = useState(false);
   const [error, setError] = useState("");
@@ -175,14 +184,70 @@ export function AddExpenseButton({
     }
   }
 
+  function applyScan(result: ScannedReceipt) {
+    if (result.title || result.merchant) {
+      setTitle(result.title || result.merchant);
+    }
+    if (result.totalCents > 0) {
+      setAmount((result.totalCents / 100).toFixed(2));
+    }
+    setCurrency(result.currency);
+    setFxRate(String(CURRENCIES[result.currency].defaultRateToBnd));
+    if (result.dateIso) setSpentDate(result.dateIso);
+    if (CATEGORIES.includes(result.category as never)) {
+      setCategory(result.category);
+    }
+    if (result.items.length) {
+      setItems(
+        result.items.map((item) => ({
+          id: Math.random().toString(36).slice(2),
+          name: item.name,
+          amount: (item.amountCents / 100).toFixed(2),
+        })),
+      );
+      setShowItems(true);
+    }
+    setAiFilled(true);
+  }
+
+  async function scanWithAi(data: string) {
+    setScanning(true);
+    setScanNote("");
+    setAiFilled(false);
+    try {
+      const response = await fetch("/api/receipts/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageDataUrl: data }),
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Could not read this receipt.");
+      }
+      applyScan(payload.receipt as ScannedReceipt);
+      setScanNote("AI filled in the fields below — check the total before saving.");
+    } catch (caught) {
+      setScanNote(
+        caught instanceof Error
+          ? `${caught.message} Enter the details manually.`
+          : "AI scan unavailable — enter the details manually.",
+      );
+    } finally {
+      setScanning(false);
+    }
+  }
+
   async function uploadReceipt(file: File) {
     setUploading(true);
     setError("");
+    setScanNote("");
+    setAiFilled(false);
     try {
       const data = await imageFileToDataUrl(file);
       setReceipt(data);
       const base64 = data.split(",")[1] ?? "";
       setReceiptKb(`${Math.max(1, Math.round((base64.length * 3) / 4 / 1024))} KB`);
+      void scanWithAi(data);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Could not read image.");
     } finally {
@@ -204,6 +269,9 @@ export function AddExpenseButton({
     setNotes("");
     setReceipt(null);
     setReceiptKb("");
+    setScanNote("");
+    setScanning(false);
+    setAiFilled(false);
     setItems([]);
     setShowItems(false);
     setError("");
@@ -213,6 +281,7 @@ export function AddExpenseButton({
     event.preventDefault();
     setError("");
 
+    if (scanning) return setError("Wait for the receipt scan to finish.");
     if (!title.trim()) return setError("Give the expense a name.");
     if (!amountCents) return setError("Enter an amount above zero.");
     if (!rate || rate <= 0) return setError("Enter a valid FX rate.");
@@ -678,7 +747,11 @@ export function AddExpenseButton({
                 </div>
                 <button
                   type="button"
-                  onClick={() => setReceipt(null)}
+                  onClick={() => {
+                    setReceipt(null);
+                    setScanNote("");
+                    setAiFilled(false);
+                  }}
                   className="grid h-8 w-8 place-items-center rounded-full text-muted hover:bg-paper"
                   aria-label="Remove receipt"
                 >
@@ -701,6 +774,25 @@ export function AddExpenseButton({
                   }}
                 />
               </label>
+            )}
+
+            {(scanning || scanNote) && (
+              <div
+                className={`mt-2 flex items-start gap-2 rounded-2xl px-3 py-2.5 text-[11px] leading-relaxed ${
+                  aiFilled
+                    ? "bg-teal-50 text-teal-900"
+                    : "bg-amber-100/60 text-ink/75"
+                }`}
+              >
+                {scanning ? (
+                  <Loader2 className="mt-0.5 h-3.5 w-3.5 shrink-0 animate-spin" />
+                ) : (
+                  <ScanLine className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                )}
+                <span>
+                  {scanning ? "Reading the receipt with Vision AI…" : scanNote}
+                </span>
+              </div>
             )}
           </div>
 
