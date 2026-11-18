@@ -40,10 +40,10 @@ export default async function ConnectionsPage() {
   return (
     <div className="space-y-5">
       <header>
-        <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-teal-700">
+        <p className="text-[11px] font-bold   text-green-700">
           Your circle
         </p>
-        <h1 className="mt-1 font-display text-4xl font-semibold tracking-tight sm:text-5xl">
+        <h1 className="mt-1 text-2xl font-semibold">
           People
         </h1>
         <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted">
@@ -56,13 +56,13 @@ export default async function ConnectionsPage() {
       <section className="card p-5">
         <AddConnectionForm />
         <p className="mt-3 flex items-start gap-1.5 text-[11px] leading-relaxed text-muted">
-          <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-teal-700" />
+          <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-green-700" />
           Connecting shares nothing. It only lets you invite each other to groups.
         </p>
       </section>
 
       {overview.incoming.length > 0 && (
-        <section className="card border-amber-300/60 bg-amber-100/30 p-5">
+        <section className="card border-neutral-300/60 bg-neutral-100/30 p-5">
           <h2 className="section-title">Requests for you</h2>
           <div className="divide-soft mt-1">
             {overview.incoming.map((entry) => (
@@ -79,7 +79,7 @@ export default async function ConnectionsPage() {
 
       <section className="card p-5">
         <h2 className="section-title flex items-center gap-2">
-          <Link2 className="h-4 w-4 text-teal-700" /> Connected
+          <Link2 className="h-4 w-4 text-green-700" /> Connected
           <span className="text-xs font-semibold text-muted">
             {overview.connected.length}
           </span>

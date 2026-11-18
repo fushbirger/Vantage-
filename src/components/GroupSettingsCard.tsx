@@ -38,7 +38,7 @@ export function GroupSettingsCard({
   return (
     <section className="card p-5">
       <h2 className="section-title flex items-center gap-2">
-        <ShieldCheck className="h-4 w-4 text-teal-700" /> Confirmation
+        <ShieldCheck className="h-4 w-4 text-green-700" /> Confirmation
       </h2>
       <div className="mt-3 flex items-start gap-3">
         <div className="min-w-0 flex-1">
@@ -56,12 +56,12 @@ export function GroupSettingsCard({
           aria-label="Require confirmation"
           disabled={!isOwner || busy}
           onClick={toggle}
-          className={`relative h-7 w-12 shrink-0 rounded-full transition disabled:opacity-50 ${
-            on ? "bg-teal-700" : "bg-line"
+          className={`relative h-7 w-12 shrink-0 rounded-none transition disabled:opacity-50 ${
+            on ? "bg-green-700" : "bg-neutral-200"
           }`}
         >
           <span
-            className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-all ${
+            className={`absolute top-0.5 h-6 w-6 rounded-none bg-white transition-all ${
               on ? "left-[22px]" : "left-0.5"
             }`}
           />
@@ -70,7 +70,7 @@ export function GroupSettingsCard({
       {!isOwner && (
         <p className="mt-2 text-[11px] text-muted">Only the group owner can change this.</p>
       )}
-      {error && <p className="mt-2 text-xs font-semibold text-coral">{error}</p>}
+      {error && <p className="mt-2 text-xs font-semibold text-red-600">{error}</p>}
     </section>
   );
 }

@@ -69,20 +69,20 @@ export function InviteMembersButton({
       >
         <div className="space-y-4">
           {error && (
-            <p className="rounded-2xl border border-coral/25 bg-coral/5 px-3.5 py-2.5 text-sm font-semibold text-coral">
+            <p className="rounded-none border border-red-600/40 bg-red-50 px-3.5 py-2.5 text-sm font-semibold text-red-600">
               {error}
             </p>
           )}
           {candidates.length === 0 ? (
-            <p className="rounded-2xl bg-paper p-4 text-sm text-muted">
+            <p className="rounded-none bg-white p-4 text-sm text-muted">
               Everyone you are connected with is already here. Add more people on{" "}
-              <Link href="/connections" className="font-bold text-teal-700 underline">
+              <Link href="/connections" className="font-bold text-green-700 underline">
                 the People page
               </Link>
               .
             </p>
           ) : (
-            <div className="divide-soft rounded-2xl border border-line bg-card">
+            <div className="divide-soft rounded-none border border-line bg-white">
               {candidates.map((person) => {
                 const on = selected.has(person.id);
                 return (
@@ -94,7 +94,7 @@ export function InviteMembersButton({
                       type="checkbox"
                       checked={on}
                       onChange={() => toggle(person.id)}
-                      className="h-4 w-4 accent-teal-700"
+                      className="h-4 w-4 accent-green-700"
                     />
                     <Avatar name={person.name} color={person.avatarColor} size="xs" />
                     <span className="flex-1 text-sm font-semibold">

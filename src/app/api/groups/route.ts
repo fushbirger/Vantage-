@@ -16,7 +16,7 @@ export async function POST(request: Request) {
   return withUser(async (user) => {
     const body = await readJson(request);
     const name = text(body.name, 80);
-    const emoji = text(body.emoji, 8) || "✈️";
+    const emoji = text(body.emoji, 8) || "";
     const kind = isGroupKind(body.kind) ? body.kind : "other";
     const description = text(body.description, 200);
     const requestedIds = Array.isArray(body.memberIds)
@@ -62,7 +62,7 @@ export async function POST(request: Request) {
           groupId: group.id,
           template: "group_invite",
           body: () =>
-            `${user.name} invited you to “${group.name}” ${group.emoji} on Vantage.\nAccept or decline: ${groupUrl(group.id).replace(/\/groups\/.*/, "/groups")}\nNothing is added to your ledger until you accept. Vantage never holds money.`,
+            `${user.name} invited you to “${group.name}” on Vantage.\nAccept or decline: ${groupUrl(group.id).replace(/\/groups\/.*/, "/groups")}\nNothing is added to your ledger until you accept. Vantage never holds money.`,
         });
       } catch (error) {
         console.error("WhatsApp invite queue failed", error);

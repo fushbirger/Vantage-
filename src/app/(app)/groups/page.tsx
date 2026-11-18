@@ -61,7 +61,7 @@ export default async function GroupsPage() {
       </header>
 
       {invites.length > 0 && (
-        <section className="card border-amber-300/60 bg-amber-100/30 p-5">
+        <section className="card border-neutral-300/60 bg-neutral-100/30 p-5">
           <h2 className="section-title">Group invitations</h2>
           <p className="mt-1 text-xs text-muted">
             You are not in these groups yet. Nothing is added to your ledger
@@ -70,7 +70,7 @@ export default async function GroupsPage() {
           <div className="divide-soft mt-2">
             {invites.map((invite) => (
               <div key={invite.groupId} className="flex items-center gap-3 py-3">
-                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-paper text-lg">
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-none bg-white text-lg">
                   {invite.groupEmoji}
                 </span>
                 <div className="min-w-0 flex-1">

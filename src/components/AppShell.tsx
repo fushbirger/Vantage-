@@ -69,7 +69,7 @@ export function AppShell({
           <div className="flex items-center gap-1">
             <Link
               href="/activity"
-              className="relative grid h-10 w-10 place-items-center rounded-none text-muted transition hover:bg-white hover:text-green-800"
+              className="relative grid h-10 w-10 place-items-center rounded-none text-muted transition hover:bg-neutral-100 hover:text-black"
               aria-label="Activity"
             >
               <Inbox className="h-5 w-5" />
@@ -97,8 +97,8 @@ export function AppShell({
                 href={item.href}
                 className={`flex items-center gap-3 rounded-none px-3.5 py-2.5 text-sm font-bold transition ${
                   active
-                    ? "bg-green-800 text-white "
-                    : "text-muted hover:bg-white hover:text-green-900"
+                    ? "bg-black text-white"
+                    : "text-muted hover:bg-neutral-100 hover:text-black"
                 }`}
               >
                 <Icon className="h-[18px] w-[18px]" />
@@ -159,12 +159,12 @@ export function AppShell({
                 key={item.href}
                 href={item.href}
                 className={`relative flex min-w-[64px] flex-col items-center gap-0.5 rounded-none px-3 py-2 text-[11px] font-bold transition ${
-                  active ? "text-green-800" : "text-muted"
+                  active ? "text-black" : "text-muted"
                 }`}
               >
                 <span
                   className={`grid h-8 w-12 place-items-center rounded-none transition ${
-                    active ? "bg-green-100" : ""
+                    active ? "bg-neutral-200" : ""
                   }`}
                 >
                   <Icon className="h-5 w-5" />

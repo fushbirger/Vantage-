@@ -824,7 +824,7 @@ export function AddExpenseButton({
           </div>
 
           {requireConfirmation && (
-            <p className="rounded-2xl border border-amber-300/60 bg-amber-100/40 px-3.5 py-2.5 text-xs leading-relaxed text-ink/75">
+            <p className="rounded-none border border-neutral-300/60 bg-neutral-100/40 px-3.5 py-2.5 text-xs leading-relaxed text-black/75">
               {confirmerNames.length > 0
                 ? `Needs a yes from ${confirmerNames.join(", ")} before it counts toward anyone's balance.`
                 : "Only you are involved, so this goes straight onto the ledger."}

@@ -19,6 +19,8 @@ import {
 import { Avatar, AvatarStack } from "@/components/Avatar";
 import { AddExpenseButton } from "@/components/AddExpenseButton";
 import { CreatePoolButton } from "@/components/CreatePoolButton";
+import { CreateRecurringBillButton } from "@/components/CreateRecurringBillButton";
+import { CreateRepaymentButton } from "@/components/CreateRepaymentButton";
 import { ExpenseConfirmButtons } from "@/components/ExpenseConfirmButtons";
 import { GroupSettingsCard } from "@/components/GroupSettingsCard";
 import {
@@ -91,7 +93,7 @@ function ExpenseRow({
             {expense.status === "pending" && (
               <span
                 className={`pill shrink-0 ${
-                  waitingOnMe ? "bg-coral/10 text-coral" : "bg-amber-300/60 text-ink/80"
+                  waitingOnMe ? "bg-red-50 text-red-600" : "bg-neutral-300/60 text-black/80"
                 }`}
               >
                 <Clock className="h-3 w-3" />
@@ -101,7 +103,7 @@ function ExpenseRow({
               </span>
             )}
             {expense.status === "rejected" && (
-              <span className="pill shrink-0 bg-coral/10 text-coral">rejected</span>
+              <span className="pill shrink-0 bg-red-50 text-red-600">rejected</span>
             )}
           </span>
           <span className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-muted">
@@ -177,7 +179,7 @@ function ExpenseRow({
         </div>
 
         {expense.status !== "confirmed" && (
-          <div className="mt-4 rounded-2xl border border-amber-300/60 bg-amber-100/40 p-3">
+          <div className="mt-4 rounded-none border border-neutral-300/60 bg-neutral-100/40 p-3">
             <p className="stat-label">
               {expense.status === "pending"
                 ? "Not on the ledger until everyone confirms"
@@ -195,7 +197,7 @@ function ExpenseRow({
                     confirmation.status === "confirmed"
                       ? "chip-active"
                       : confirmation.status === "rejected"
-                        ? "border-coral/30 text-coral"
+                        ? "border-red-600/40 text-red-600"
                         : ""
                   }`}
                 >
@@ -324,8 +326,7 @@ export default async function GroupPage({
         <ArrowLeft className="h-3.5 w-3.5" /> All groups
       </Link>
 
-      <header className="card overflow-hidden">
-        <div className="h-1.5 w-full bg-green-700" />
+      <header className="card">
         <div className="p-5 sm:p-6">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
             <div className="flex items-start gap-4">
@@ -525,9 +526,9 @@ export default async function GroupPage({
 
           {(ledger.pendingExpenses.length > 0 ||
             ledger.rejectedExpenses.length > 0) && (
-            <section className="rounded-3xl border border-amber-300/60 bg-amber-100/30 p-4 sm:p-5">
+            <section className="rounded-none border border-neutral-300/60 bg-neutral-100/30 p-4 sm:p-5">
               <h2 className="section-title flex items-center gap-2">
-                <Clock className="h-4 w-4 text-amber-500" /> Waiting for confirmation
+                <Clock className="h-4 w-4 text-neutral-500" /> Waiting for confirmation
               </h2>
               <p className="mt-1 text-xs text-muted">
                 {waitingOnMeCount > 0
@@ -930,7 +931,7 @@ export default async function GroupPage({
                         <p className="truncate text-sm font-semibold">{member.name}</p>
                         <p className="truncate text-[11px] text-muted">@{member.username}</p>
                       </div>
-                      <span className="pill bg-amber-300/60 text-ink/80">Invited</span>
+                      <span className="pill bg-neutral-300/60 text-black/80">Invited</span>
                       {isOwner && (
                         <CancelInviteButton
                           groupId={ledger.group.id}

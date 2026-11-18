@@ -85,7 +85,7 @@ export default async function ActivityPage() {
           {expensesAwaiting.length > 0 && (
             <section className="card p-5">
               <h2 className="section-title flex items-center gap-2">
-                <BellRing className="h-4 w-4 text-coral" /> Needs your yes
+                <BellRing className="h-4 w-4 text-red-600" /> Needs your yes
               </h2>
               <p className="mt-1 text-xs text-muted">
                 Someone added these expenses on your behalf. They only count
@@ -95,7 +95,7 @@ export default async function ActivityPage() {
                 {expensesAwaiting.map((expense) => (
                   <div
                     key={expense.id}
-                    className="rounded-2xl border border-amber-300/60 bg-amber-100/40 p-3"
+                    className="rounded-none border border-neutral-300/60 bg-neutral-100/40 p-3"
                   >
                     <p className="text-sm font-bold">
                       {expense.title} · {formatBnd(expense.amountBndCents)}
